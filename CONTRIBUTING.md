@@ -19,7 +19,7 @@ Building the other targets needs more:
 | Target | Needs | Command |
 | --- | --- | --- |
 | patch.Init firmware | [Arm GNU toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) (`arm-none-eabi-gcc`), the `lib/libDaisy` submodule | `make firmware` |
-| VCV Rack plugin | the [Rack 2 SDK](https://vcvrack.com/downloads/), unpacked; `zstd` | `make vcv RACK_DIR=path/to/Rack-SDK` |
+| VCV Rack plugin | the [Rack 2 SDK](https://vcvrack.com/downloads/) (`scripts/fetch-rack-sdk.sh ../Rack-SDK <platform>` downloads and verifies it), `jq`, `zstd` | `make vcv RACK_DIR=../Rack-SDK` |
 | Spectrograms | nothing extra (uv fetches numpy, scipy, matplotlib) | `make analyze` |
 | Docs site | nothing extra (uv fetches MkDocs) | `make docs-serve` |
 | Banner, social card, diagram | Chrome or Chromium (fonts are vendored) | `docs/assets/render.sh` |

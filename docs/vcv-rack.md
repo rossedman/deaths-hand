@@ -14,8 +14,10 @@ See [Reading the panel](panel.md) for what each sigil means, and [Getting starte
 ## Building
 
 ```sh
-scripts/fetch-rack-sdk.sh ../Rack-SDK
-make vcv RACK_DIR=../Rack-SDK          # vcv/dist/DeathsHand-<version>-lin-x64.vcvplugin
+scripts/fetch-rack-sdk.sh ../Rack-SDK lin-x64   # or win-x64, mac-x64, mac-arm64
+make vcv RACK_DIR=../Rack-SDK                   # vcv/dist/DeathsHand-<version>-<platform>.vcvplugin
 ```
 
-Release builds are Linux x64. For macOS and Windows, build with the SDK for that platform from [vcvrack.com](https://vcvrack.com/downloads/).
+On Windows, build in an MSYS2 MinGW 64-bit shell with `mingw-w64-x86_64-gcc`, `mingw-w64-x86_64-jq`, `make`, `unzip` and `zstd` installed. On an Apple silicon Mac, `make -C vcv RACK_DIR=<mac-x64 SDK> CROSS_COMPILE=x86_64-apple-darwin dist` builds the Intel package.
+
+Every release carries signed packages for all four: Linux x64, Windows x64, macOS x64 and macOS arm64.

@@ -14,4 +14,5 @@ The first public release. VCV Rack requires plugin versions to start with the Ra
 - Three character macros on the front panel, each with its own CV jack: FLESH (FM, fold, asymmetry), MALICE (feedback, chaos) and LEGION (sub, voices, drift). Ratio, modulator shape, symmetry and fine tune move to the patch.Init's shift layer, and the VCV panel mirrors the hardware knob for knob.
 - A unison stack: up to four detuned primary voices and a sub one octave down, summed into the wavefolder, with spread, Lorenz drift and an envelope-aware DC correction. LEGION plays it.
 - A sixth patch, Legion. All six are written as knob positions and rendered through the firmware's own panel mapping.
-- Open-source project files, CI for every target, signed releases, branding and a docs site.
+- Open-source project files, CI for every target, branding and a docs site.
+- Signed releases: the firmware `.bin` and the VCV plugin for Linux x64, Windows x64, macOS x64 and macOS arm64, with cosign signatures and build provenance.

@@ -29,10 +29,10 @@ On Linux, install the [Arm GNU toolchain](https://developer.arm.com/downloads/-/
 
 ## VCV Rack
 
-Download the `.vcvplugin` file from the [latest release](https://github.com/rossedman/deaths-hand/releases/latest) and drop it into your Rack user folder's `plugins` directory, or build it:
+Download the `.vcvplugin` file for your platform (`lin-x64`, `win-x64`, `mac-x64` or `mac-arm64`) from the [latest release](https://github.com/rossedman/deaths-hand/releases/latest) and drop it into your Rack user folder's `plugins` directory, or build it:
 
 ```sh
-scripts/fetch-rack-sdk.sh ../Rack-SDK     # Linux x64; on macOS or Windows, download the SDK from vcvrack.com
+scripts/fetch-rack-sdk.sh ../Rack-SDK lin-x64   # or win-x64, mac-x64, mac-arm64
 make vcv RACK_DIR=../Rack-SDK
 make -C vcv RACK_DIR=../../Rack-SDK install
 ```

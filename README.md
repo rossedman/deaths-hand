@@ -215,8 +215,11 @@ settings as their own knobs, a routing knob with a trigger input, and the same
 jacks. Knobs and CVs go through the same `cosc::panelToParams` as the firmware,
 so a patch translates one-to-one.
 
+Each release has signed packages for Linux x64, Windows x64, macOS x64 and
+macOS arm64. To build one yourself:
+
 ```sh
-# download the Rack 2 SDK from vcvrack.com and unzip it next to this repo
+scripts/fetch-rack-sdk.sh ../Rack-SDK lin-x64   # or win-x64, mac-x64, mac-arm64
 make -C vcv RACK_DIR=../../Rack-SDK install
 ```
 The panel is generated: `make panel` writes `res/ComplexOsc.svg`,
