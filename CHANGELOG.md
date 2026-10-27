@@ -2,7 +2,15 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## 0.1.0 (unreleased)
+## 0.1.1
+
+### Fixed
+
+- Releases published from GitHub's UI now get their assets. The workflow uploads into a release that already exists instead of failing, which is what left `v0.1.0` with no downloads.
+
+## 0.1.0 (2026-10-27)
+
+Tagged, but the release has no assets (see 0.1.1); use 0.1.1.
 
 The first public release. The project version lives in `VERSION` and releases are tagged to match (`v0.1.0`). The VCV plugin keeps its own version in `vcv/plugin.json` (`2.0.0`), because VCV Rack 2 refuses to load a plugin whose version doesn't start with `2.`; its package files are named for that version.
 
