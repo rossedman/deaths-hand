@@ -260,44 +260,52 @@ static void testChaos() {
 static void testChaosLongRun() {
     std::printf("long-run stability: 60 s of worst-case evil per pitch\n");
     static ComplexOsc<4> osc;
-    for (float v : {-4.f, 0.f, 3.f, 6.f}) {
-        osc.init(kFs);
-        Params p;
-        p.pitchV    = v;
-        p.ratioLock = false;
-        p.modPitchV = v + 0.37f;
-        p.fmIndex   = 1.f;
-        p.feedback  = 1.f;
-        p.chaos     = 1.f;
-        p.timbre    = 1.f;
-        p.symmetry  = 0.8f;
-        p.timbreMod = 1.f;
-        p.amDepth   = 0.5f;
-        p.modShape  = ModShape::Lorenz;
-        osc.setParams(p);
-        osc.snapSmoothers();
-        bool      bad  = false;
-        float     peak = 0.f;
-        double    e = 0.0, mean = 0.0;
-        const int n = static_cast<int>(kFs) * 60, tail = static_cast<int>(kFs);
-        for (int i = 0; i < n; ++i) {
-            float a, b;
-            osc.process(0.f, a, b);
-            if (!std::isfinite(a) || !std::isfinite(b)) bad = true;
-            peak = std::max(peak, std::max(std::fabs(a), std::fabs(b)));
-            if (i >= n - tail) {
-                e += static_cast<double>(a) * a;
-                mean += a;
+    for (int stack = 0; stack < 2; ++stack)
+        for (float v : {-4.f, 0.f, 3.f, 6.f}) {
+            osc.init(kFs);
+            Params p;
+            p.pitchV    = v;
+            p.ratioLock = false;
+            p.modPitchV = v + 0.37f;
+            p.fmIndex   = 1.f;
+            p.feedback  = 1.f;
+            p.chaos     = 1.f;
+            p.timbre    = 1.f;
+            p.symmetry  = 0.8f;
+            p.timbreMod = 1.f;
+            p.amDepth   = 0.5f;
+            p.modShape  = ModShape::Lorenz;
+            if (stack) { // and the whole unison stack on top
+                p.voices = 4;
+                p.spread = 1.f;
+                p.drift  = 1.f;
+                p.sub    = 1.f;
             }
+            osc.setParams(p);
+            osc.snapSmoothers();
+            bool      bad  = false;
+            float     peak = 0.f;
+            double    e = 0.0, mean = 0.0;
+            const int n = static_cast<int>(kFs) * 60, tail = static_cast<int>(kFs);
+            for (int i = 0; i < n; ++i) {
+                float a, b;
+                osc.process(0.f, a, b);
+                if (!std::isfinite(a) || !std::isfinite(b)) bad = true;
+                peak = std::max(peak, std::max(std::fabs(a), std::fabs(b)));
+                if (i >= n - tail) {
+                    e += static_cast<double>(a) * a;
+                    mean += a;
+                }
+            }
+            double rms = std::sqrt(e / tail);
+            mean /= tail;
+            std::printf("  %+.0f V%s  peak %.2f V  last-second rms %.2f V  dc %+.3f V  finite %s\n", v, stack ? " stacked" : "", peak, rms, mean,
+                        bad ? "NO" : "yes");
+            CHECK(!bad, "non-finite output at %.0f V", v);
+            CHECK(peak < 7.5f, "peak %.2f V at %.0f V", peak, v);
+            CHECK(rms > 0.2, "output died (rms %.3f) at %.0f V", rms, v);
+            CHECK(std::fabs(mean) < 0.25, "DC lock-up (%.3f V) at %.0f V", mean, v);
         }
-        double rms = std::sqrt(e / tail);
-        mean /= tail;
-        std::printf("  %+.0f V  peak %.2f V  last-second rms %.2f V  dc %+.3f V  finite %s\n", v, peak, rms, mean, bad ? "NO" : "yes");
-        CHECK(!bad, "non-finite output at %.0f V", v);
-        CHECK(peak < 7.5f, "peak %.2f V at %.0f V", peak, v);
-        CHECK(rms > 0.2, "output died (rms %.3f) at %.0f V", rms, v);
-        CHECK(std::fabs(mean) < 0.25, "DC lock-up (%.3f V) at %.0f V", mean, v);
-    }
 }
 
 static void testLorenz() {
@@ -318,6 +326,144 @@ static void testLorenz() {
         CHECK(!bad, "Lorenz non-finite at %.2f Hz", hz);
         if (hz >= 1.f) CHECK(hi - lo > 0.8f, "Lorenz stuck at %.2f Hz", hz);
     }
+}
+
+// Short-window RMS envelope: max/min over 50 ms windows (whole cycles at 220 Hz).
+static double envelopeSwing(const std::vector<float>& x) {
+    const size_t w  = static_cast<size_t>(kFs / 20);
+    double       lo = 1e9, hi = 0.0;
+    for (size_t i = 0; i + w <= x.size(); i += w) {
+        double e = 0.0;
+        for (size_t j = i; j < i + w; ++j) e += static_cast<double>(x[j]) * x[j];
+        e  = std::sqrt(e / w);
+        lo = std::min(lo, e);
+        hi = std::max(hi, e);
+    }
+    return hi / std::max(lo, 1e-9);
+}
+
+// Level of one exact 1 Hz bin relative to the whole signal, in dB.
+static double binDb(const std::vector<float>& x, double hz) {
+    const size_t n = x.size();
+    double       c = 2.0 * std::cos(2.0 * 3.14159265358979 * hz / kFs), s1 = 0, s2 = 0, total = 0;
+    for (size_t i = 0; i < n; ++i) {
+        double v  = x[i] * (0.5 - 0.5 * std::cos(2.0 * 3.14159265358979 * i / n));
+        double s0 = v + c * s1 - s2;
+        s2        = s1;
+        s1        = s0;
+        total += v * v;
+    }
+    double p = (s1 * s1 + s2 * s2 - c * s1 * s2) * 2.0 / n;
+    return 10.0 * std::log10(p / total + 1e-30);
+}
+
+static void testUnison() {
+    std::printf("unison: voices, spread, drift, sub\n");
+    const float v220 = std::log2(220.f / kC4Hz);
+
+    // No spread and no drift: extra voices start in phase and stay there, so the
+    // stack must sound exactly like one voice, folder and all.
+    Params one;
+    one.pitchV   = v220;
+    one.timbre   = 0.6f;
+    one.symmetry = 0.5f;
+    one.feedback = 0.3f;
+    Params four  = one;
+    four.voices  = 4;
+    auto  a = renderTone(one), b = renderTone(four);
+    float diff = 0.f;
+    for (size_t i = 0; i < a.size(); ++i) diff = std::max(diff, std::fabs(a[i] - b[i]));
+    std::printf("  4 voices, no spread vs 1 voice: max difference %.2e V\n", diff);
+    CHECK(diff < 1e-3f, "an unspread stack should match one voice (diff %.2e V)", diff);
+
+    // Spread: the voices drift in and out of phase, so the level beats.
+    Params beat            = one;
+    beat.timbre            = 0.f;
+    beat.symmetry          = 0.f;
+    beat.feedback          = 0.f;
+    Params flat            = beat;
+    beat.voices            = 2;
+    beat.spread            = 0.6f; // ~25 cents: a few beats per second at 220 Hz
+    const double swingFlat = envelopeSwing(renderTone(flat, 2)), swingBeat = envelopeSwing(renderTone(beat, 2));
+    std::printf("  envelope swing: 1 voice %.2fx, 2 voices spread %.2fx\n", swingFlat, swingBeat);
+    CHECK(swingFlat < 1.05, "one voice should be steady (%.2fx)", swingFlat);
+    CHECK(swingBeat > 3.0, "spread voices should beat (%.2fx)", swingBeat);
+
+    // Drift alone (no spread) also pulls the voices apart.
+    Params drift            = flat;
+    drift.voices            = 3;
+    drift.drift             = 1.f;
+    const double swingDrift = envelopeSwing(renderTone(drift, 4));
+    std::printf("  envelope swing: 3 voices, drift only %.2fx\n", swingDrift);
+    CHECK(swingDrift > 1.5, "drift should detune the voices (%.2fx)", swingDrift);
+
+    // Sub: a sine one octave down. 220 Hz and 110 Hz land on exact 1 Hz bins.
+    Params sub          = flat;
+    sub.sub             = 1.f;
+    const double subOff = binDb(renderTone(flat), 110.0), subOn = binDb(renderTone(sub), 110.0);
+    std::printf("  110 Hz (sub) level: off %.1f dB, on %.1f dB\n", subOff, subOn);
+    CHECK(subOff < -80.0, "no sub should mean no 110 Hz (%.1f dB)", subOff);
+    CHECK(subOn > -10.0, "the sub should be strong (%.1f dB)", subOn);
+
+    // Everything on with a heavy, biased fold. The folder's DC follows the stack's
+    // beating envelope; without the envelope-aware correction it leaks through
+    // the DC blocker as a slow wobble (~0.25 V) and pushes the peaks up.
+    Params all      = one;
+    all.voices      = 4;
+    all.spread      = 0.6f;
+    all.timbre      = 0.6f;
+    all.symmetry    = 0.9f;
+    all.feedback    = 0.f;
+    auto         y  = renderTone(all, 6);
+    const double c  = 1.0 - std::exp(-2.0 * 3.14159265358979 * 5.0 / kFs); // 5 Hz low-pass
+    double       lp = 0.0, wob = 0.0;
+    float        peak = 0.f;
+    for (float v : y) {
+        lp += c * (v - lp);
+        wob += lp * lp;
+        peak = std::max(peak, std::fabs(v));
+    }
+    wob = std::sqrt(wob / static_cast<double>(y.size()));
+    std::printf("  4 voices spread, biased fold: <5 Hz wobble %.3f V  peak %.2f V\n", wob, peak);
+    CHECK(wob < 0.1, "stacked fold wobbles at the beat rate (%.3f V)", wob);
+    CHECK(peak < 5.5f, "stacked fold peak %.2f V", peak);
+
+    // Changing the voice count fades voices in: no click bigger than the wave's own steps.
+    static ComplexOsc<4> osc;
+    osc.init(kFs);
+    Params p = flat;
+    p.spread = 0.6f;
+    osc.setParams(p);
+    osc.snapSmoothers();
+    float prev = 0.f, stepBefore = 0.f, stepAfter = 0.f, o, m;
+    for (int i = 0; i < 48000; ++i) {
+        if (i == 24000) {
+            p.voices = 4;
+            osc.setParams(p);
+        }
+        osc.process(0.f, o, m);
+        if (i > 1000) (i < 24000 ? stepBefore : stepAfter) = std::max(i < 24000 ? stepBefore : stepAfter, std::fabs(o - prev));
+        prev = o;
+    }
+    std::printf("  1 -> 4 voices: largest step %.3f V (before %.3f V)\n", stepAfter, stepBefore);
+    CHECK(stepAfter < 1.5f * stepBefore, "adding voices clicked (%.3f V vs %.3f V)", stepAfter, stepBefore);
+}
+
+static void testLayers() {
+    std::printf("patch.Init layers: shift, unison, frozen ratio lock\n");
+    LayerSelect l;
+    l.update(false, true);
+    CHECK(l.layer == kNormal && l.ratioLock, "toggle up, no button: normal layer, locked");
+    CHECK(l.update(true, true) && l.layer == kShift, "button + toggle up: shift layer");
+    CHECK(l.update(true, false) && l.layer == kUnison, "flip toggle down while holding: unison layer");
+    CHECK(l.ratioLock, "ratio lock must not change while the button is held");
+    CHECK(l.update(true, true) && l.layer == kShift && l.ratioLock, "flip back up: shift layer again");
+    CHECK(l.update(false, true) && l.layer == kNormal && l.ratioLock, "release with toggle up: still locked");
+    l.update(false, false);
+    CHECK(l.layer == kNormal && !l.ratioLock, "toggle down, no button: free mode");
+    CHECK(l.update(true, false) && l.layer == kUnison && !l.ratioLock, "free mode + button: unison layer");
+    CHECK(!l.update(true, false), "no change, no layer switch");
+    std::printf("  ok\n");
 }
 
 static void testPickup() {
@@ -358,7 +504,7 @@ static void testPickup() {
 }
 
 template <int OS>
-static double benchNsPerSample() {
+static double benchNsPerSample(bool stacked = false) {
     static ComplexOsc<OS> osc;
     osc.init(kFs);
     Params p;
@@ -366,6 +512,12 @@ static double benchNsPerSample() {
     p.timbre    = 0.6f;
     p.amDepth   = 0.3f;
     p.timbreMod = 0.4f;
+    if (stacked) {
+        p.voices = 4;
+        p.spread = 0.5f;
+        p.drift  = 0.5f;
+        p.sub    = 0.5f;
+    }
     osc.setParams(p);
     const int      n    = 48000 * 4;
     volatile float sink = 0.f;
@@ -444,8 +596,8 @@ static void renderAll(const std::string& dir) {
 }
 
 // ---------------------------------------------------------------- examples
-// Five presets, each written as patch.Init knob positions (0..1 = 7 o'clock..5 o'clock)
-// so they can be dialed in by hand. See README "Five evil patches".
+// Six presets, each written as patch.Init knob positions (0..1 = 7 o'clock..5 o'clock)
+// so they can be dialed in by hand. See README "Six evil patches".
 struct Example {
     const char*                         file;
     const char*                         name;
@@ -511,6 +663,18 @@ static void renderExamples(const std::string& dir) {
              p.timbreMod = 0.3f; // routing 3: FM + ring
              p.modShape  = (t < 0.5f) ? ModShape::Square : ModShape::Lorenz;
          }},
+        {"ex6_legion.wav", "Legion",
+         [](float t, Params& p) { // four drifting voices, a sub rising underneath, the fold opening
+             p.pitchV   = -2.f;
+             p.ratio    = 1.f;
+             p.fmIndex  = 0.15f;
+             p.feedback = 0.2f;
+             p.timbre   = 0.25f + 0.35f * t;
+             p.voices   = 4;
+             p.spread   = 0.4f;
+             p.drift    = 0.5f;
+             p.sub      = 0.7f * t; // routing 0
+         }},
     };
     for (const Example& e : examples) {
         std::printf("  %s\n", e.name);
@@ -527,9 +691,12 @@ int main(int argc, char** argv) {
     testChaos();
     testLorenz();
     testChaosLongRun();
+    testUnison();
+    testLayers();
     testPickup();
     std::printf("benchmark (host CPU, per output sample)\n");
     std::printf("  OS=1: %6.1f ns   OS=2: %6.1f ns   OS=4: %6.1f ns\n", benchNsPerSample<1>(), benchNsPerSample<2>(), benchNsPerSample<4>());
+    std::printf("  OS=4, 4 voices + sub: %6.1f ns\n", benchNsPerSample<4>(true));
     renderAll(out);
     renderExamples(out);
     std::printf(g_failures ? "\n%d FAILURE(S)\n" : "\nall tests passed\n", g_failures);

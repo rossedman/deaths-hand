@@ -10,6 +10,7 @@ See [Reading the panel](panel.md) for what each sigil means, and [Getting starte
 - The ratio lock is a switch (the key sigil). Up locks the modulator to the ratio steps; down frees it.
 - AM → ring mod is a continuous knob (the crossed ring) rather than a routing step, and the serpent knob sets how much the modulator drives the timbre.
 - Separate CV inputs for symmetry, AM, feedback and chaos, and a dedicated MOD V/OCT input.
+- The unison stack (voices, spread, drift, sub) is in the module's right-click menu, under **Unison**, because the 16 HP panel is full. It has no CV inputs yet.
 
 ## Building
 

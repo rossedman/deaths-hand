@@ -77,7 +77,9 @@ altar. The edge runes and the summoning circle are decoration.
 | Self-feedback 0 → 0.5 → 1 | pure sine (H2 −117 dB) → saw-like (H2 −10 dB) → noisy |
 | 60 s worst-case evil (fb, chaos, Lorenz, all max) | finite, alive, no DC lock-up, at 4 pitches |
 | Output range | ±5 V nominal, DC-free, peaks up to ~7.3 V with heavy feedback/chaos |
-| patch.Init flash / RAM | 106 KB of 128 KB / 37 KB |
+| Unison: 4 voices, no spread vs 1 voice | identical to within 0.05 mV |
+| Unison: 4 voices spread, biased fold | beat-rate wobble 0.05 V (0.26 V without the envelope-aware DC fix) |
+| patch.Init flash / RAM | 105 KB of 128 KB / 36 KB (arm-gcc 13.3) |
 
 ## Flash your patch.Init
 
@@ -105,7 +107,7 @@ the engine grows.
 
 ## patch.Init control map
 
-Each knob has two jobs. **Hold the button** to reach the shift layer. A
+Each knob has three jobs. **Hold the button** to reach the shift layer. A
 parameter only moves once its knob passes through the stored value (soft
 takeover), so switching layers never makes the sound jump.
 
@@ -115,6 +117,23 @@ takeover), so switching layers never makes the sound jump.
 | 2 (CV_2) + jack CV_8 | **Toggle up:** FM ratio, 11 steps (0.25, 0.5, 1, 1.5, 2, 3 … 8). **Toggle down:** free modulator pitch, ~1 Hz LFO up to C7 | **Chaos**: primary FMs the modulator back |
 | 3 (CV_3) + jack CV_6 | FM index | **Symmetry** (noon = none) |
 | 4 (CV_4) + jack CV_7 | Timbre (wavefold) | **Modulator shape**: sine, triangle, saw, square, Lorenz (5 zones) |
+
+**Hold the button and flip the toggle down** for a third layer, the unison
+stack. While the button is held the toggle only picks the layer, so the ratio
+lock doesn't change; flip it back before you let go to keep the mode you were
+in. The LED blinks on this layer.
+
+| Knob | Hold button, toggle down (unison) |
+|---|---|
+| 1 | **Voices**: 1, 2, 3 or 4 (4 zones). Extra voices fade in over 10 ms |
+| 2 | **Spread**: detune between voices, up to 70 cents (squared: chorus near the bottom, out of tune at the top) |
+| 3 | **Drift**: a slow Lorenz attractor wanders each extra voice's tuning, up to 25 cents |
+| 4 | **Sub**: a sine one octave down, mixed into the wavefolder |
+
+With one voice and no sub, the engine is bit-identical to the plain oscillator.
+In free mode (toggle down), holding the button goes straight to the unison
+layer; flip the toggle up while holding to reach feedback, chaos, symmetry and
+shape.
 
 Jacks always drive the normal-layer parameter.
 
@@ -127,13 +146,14 @@ Jacks always drive the normal-layer parameter.
 | Gate 1 / Gate 2 | Hard sync / next routing |
 | Audio OUT L / R | Primary / modulator |
 | CV OUT 1 | Modulator as 0–5 V CV (an LFO in free mode, a chaotic one with Lorenz) |
-| CV OUT 2 / LED | Routing brightness; full while shift is held |
+| CV OUT 2 / LED | Routing brightness; full on the shift layer, blinking on the unison layer |
 
-## Five evil patches
+## Six evil patches
 
 Rendered in `test/out/ex*.wav` by the same engine the firmware runs. Knob
 positions are clock faces: 7:00 is fully counter-clockwise, 12:00 is centre,
-5:00 is fully clockwise. "S1"–"S4" means hold the button and turn knob 1–4.
+5:00 is fully clockwise. "S1"–"S4" means hold the button and turn knob 1–4;
+"U1"–"U4" means hold the button with the toggle flipped down (the unison layer).
 Routing is the number of taps after power-on.
 
 **1 · Reactor hum.** A low drone whose feedback breathes in and out.
@@ -159,6 +179,13 @@ modulator turns chaotic. Toggle up, routing 3. K1 10:15, K2 11:00 (ratio 2),
 K3 11:30, S1 12:00, S3 2:30, S4 2:00 (square). Sweep **K4 from 10:00 to 3:00**
 and **S2 from 7:00 to 2:00**, then **flip S4 to 4:00** (Lorenz) halfway.
 
+**6 · Legion.** Four drifting voices, a sub rising underneath, the fold
+opening. Toggle up, routing 0. K1 8:40, K2 9:15 (ratio 1), K3 8:30, S1 9:00.
+Hold the button, **flip the toggle down** for the unison layer: U1 fully
+clockwise (4 voices), U2 11:00, U3 12:00. Flip the toggle back up before you
+let go. Then sweep **K4 from 9:30 to 1:00**, and on the unison layer bring
+**U4 from 7:00 to 2:00**.
+
 ### Things to verify on your unit (top of `hw/main.cpp`)
 - `kAudioFullScaleV`: the volts a full-scale codec sample produces. It's set
   conservatively, so if the output is quiet, measure it and lower the number.
@@ -172,7 +199,7 @@ and **S2 from 7:00 to 2:00**, then **flip S4 to 4:00** (Lorenz) halfway.
 ```sh
 make -C test analyze    # tests + renders + spectrograms (needs numpy/scipy/matplotlib)
 ```
-Writes `test/out/*.wav` (including `demo.wav`, the five `ex*.wav` patches and
+Writes `test/out/*.wav` (including `demo.wav`, the six `ex*.wav` patches and
 the feedback/chaos sweeps) and `test/out/aliasing.png`. The suite checks pitch
 accuracy, stability under abusive parameters and external FM, through-zero
 behaviour, the feedback spectrum, that chaos actually breaks periodicity,
@@ -202,6 +229,14 @@ fonts or images), so it renders in Rack and scales cleanly to a printed panel. I
   "hunts" at Nyquist and turns to hiss far too early.
 - **Chaos** feeds the primary's output into the modulator's frequency, clamped
   to ±20 kHz so heavy settings can't push it far past the band limit.
+- **Unison** stacks up to four primary voices before the wavefolder, so the
+  fold intermodulates them (the growl a single voice can't make). Every voice
+  gets the same through-zero FM and its own self-feedback history. An idle
+  voice shadows voice 0, so it fades in exactly in phase and only spread or
+  drift pull it away; with no spread, four voices sound like one. Detuned
+  sines this close look like one sine with a beating amplitude A, so the
+  folder's DC becomes `sin(a·b)·J0(a·A)`, with A tracked per sample from the
+  voices' phasors; that keeps the beat from leaking through as a slow wobble.
 - **Lorenz** is integrated with a midpoint (RK2) step capped at 0.02, with a
   reset guard, so no setting can make it run away or produce NaN.
 - **CPU:** cost is dominated by two 129-tap decimators. If the CPU meter says

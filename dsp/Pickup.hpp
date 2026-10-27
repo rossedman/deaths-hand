@@ -42,4 +42,29 @@ struct PickupKnob {
     }
 };
 
+// Which knob layer is live on the patch.Init, and the ratio-lock state.
+//
+//   button up                    -> normal layer; the toggle sets ratio lock
+//   button held, toggle up       -> shift layer (feedback, chaos, symmetry, shape)
+//   button held, toggle down     -> unison layer (voices, spread, drift, sub)
+//
+// While the button is held the toggle only picks the layer, so ratio lock is
+// frozen at its value from before the press. Flip the toggle back before
+// letting go to keep the mode you were in; on release it follows the toggle.
+enum Layer { kNormal = 0, kShift = 1, kUnison = 2, kNumLayers = 3 };
+
+struct LayerSelect {
+    int  layer     = kNormal;
+    bool ratioLock = true;
+
+    // Returns true when the live layer changed this call.
+    bool update(bool shiftHeld, bool toggleUp) {
+        if (!shiftHeld) ratioLock = toggleUp;
+        const int  next    = !shiftHeld ? kNormal : (toggleUp ? kShift : kUnison);
+        const bool changed = next != layer;
+        layer              = next;
+        return changed;
+    }
+};
+
 } // namespace cosc

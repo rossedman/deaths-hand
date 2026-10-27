@@ -12,6 +12,11 @@
 //
 // so we subtract it exactly and rescale, keeping the output DC-free and inside
 // +-1 with no limiter (limiters add corners, corners alias).
+//
+// A unison stack is a sum of sines. Detuned voices close in pitch look like one
+// sine whose amplitude A slowly beats, so its DC is sin(a*b) * J0(a*A); a sub
+// at another frequency multiplies in its own J0 term. Callers pass those
+// amplitudes. With the defaults (one sine, amplitude 1) nothing changes.
 #pragma once
 
 #include "Math.hpp"
@@ -36,7 +41,11 @@ class Folder {
     }
 
     // x: -1..1 (the sine core), timbre: 0..1, symmetry: -1..1. Returns -1..1.
-    float process(float x, float timbre, float symmetry) const {
+    // amp: envelope of the (stacked) sine part of x; subAmp: amplitude of a sub
+    // sine in x, if any. Both only steer the DC correction.
+    float process(float x, float timbre, float symmetry) const { return process(x, timbre, symmetry, 1.f, 0.f); }
+
+    float process(float x, float timbre, float symmetry, float amp, float subAmp) const {
         const float drive = 1.f + clampf(timbre, 0.f, 1.f) * (kMaxDrive - 1.f);
         const float b     = symmetry * 0.5f;
         // sin(pi/2 * drive * (x + b)) in turns: at drive=1 a +-1 input maps to +-1.
@@ -45,8 +54,10 @@ class Folder {
         // symmetry=0 give a pure sine.
         const float wet = clampf(timbre * 6.666f + std::fabs(symmetry) * 4.f, 0.f, 1.f);
 
-        const float a  = 0.5f * kPi * drive;
-        const float dc = wet * sinTurns(0.25f * drive * b) * j0(a);
+        const float a = 0.5f * kPi * drive;
+        float       j = j0(a * amp);
+        if (subAmp > 0.f) j *= j0(a * subAmp);
+        const float dc = wet * sinTurns(0.25f * drive * b) * j;
         return (lerpf(x, folded, wet) - dc) / (1.f + std::fabs(dc));
     }
 

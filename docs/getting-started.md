@@ -41,4 +41,4 @@ make -C vcv RACK_DIR=../../Rack-SDK install
 
 - [Reading the panel](panel.md): what each sigil means.
 - [patch.Init control map](patch-init.md): four knobs, two layers.
-- [Five evil patches](patches.md) to start from.
+- [Six evil patches](patches.md) to start from.

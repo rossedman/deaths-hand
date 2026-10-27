@@ -7,6 +7,8 @@
 //   CV_2 knob + CV_8 jack : ratio / modulator pitch        | CHAOS (cross-FM)
 //   CV_3 knob + CV_6 jack : FM index                       | SYMMETRY (noon = 0)
 //   CV_4 knob + CV_7 jack : timbre (wavefold)              | MOD SHAPE (5 zones)
+//   hold button + toggle DOWN: third layer, the unison stack
+//   CV_1 VOICES (1-4)  CV_2 SPREAD (detune)  CV_3 DRIFT  CV_4 SUB (octave down)
 //   (jacks always drive the normal-layer parameter)
 //   IN_L        : external FM (audio rate)    IN_R : symmetry CV (+-5 V)
 //   GATE_IN_1   : hard sync                   GATE_IN_2 : next routing mode
@@ -59,8 +61,11 @@ constexpr Routing kRoutings[] = {
 };
 constexpr int kNumRoutings = sizeof(kRoutings) / sizeof(kRoutings[0]);
 
-enum Layer { kNormal = 0, kShift = 1 };
-cosc::PickupKnob knobs[2][4]; // [layer][knob]
+using cosc::kNormal;
+using cosc::kShift;
+using cosc::kUnison;
+cosc::PickupKnob  knobs[cosc::kNumLayers][4]; // [layer][knob]
+cosc::LayerSelect layers;
 
 int      routing      = 0;
 bool     gate2Was     = false;
@@ -76,21 +81,22 @@ void handleButtonAndLayers() {
     toggle.Debounce();
 
     const bool shift = button.Pressed();
-    if (shift != shiftWas) {
-        const int active = shift ? kShift : kNormal;
-        for (int i = 0; i < 4; ++i) knobs[active][i].lock(rawKnob(i));
-        if (shift) {
-            pressStartMs = System::GetNow();
-            shiftUsed    = false;
-        } else if (!shiftUsed && System::GetNow() - pressStartMs < kTapMs) {
-            routing = (routing + 1) % kNumRoutings; // it was a tap
-        }
-        shiftWas = shift;
+    if (shift && !shiftWas) {
+        pressStartMs = System::GetNow();
+        shiftUsed    = false;
+    } else if (!shift && shiftWas && !shiftUsed && System::GetNow() - pressStartMs < kTapMs) {
+        routing = (routing + 1) % kNumRoutings; // it was a tap
     }
 
-    const int active = shift ? kShift : kNormal;
+    // Flipping the toggle while holding switches shift <-> unison; that's not a tap.
+    if (layers.update(shift, toggle.Pressed())) {
+        for (int i = 0; i < 4; ++i) knobs[layers.layer][i].lock(rawKnob(i));
+        if (shift && shiftWas) shiftUsed = true;
+    }
+    shiftWas = shift;
+
     for (int i = 0; i < 4; ++i)
-        if (knobs[active][i].update(rawKnob(i)) && shift) shiftUsed = true;
+        if (knobs[layers.layer][i].update(rawKnob(i)) && shift) shiftUsed = true;
 }
 
 void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, size_t size) {
@@ -106,12 +112,13 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, s
 
     const cosc::PickupKnob* n = knobs[kNormal];
     const cosc::PickupKnob* s = knobs[kShift];
+    const cosc::PickupKnob* u = knobs[kUnison];
 
     cosc::Params p;
     const float  pitchCv = cvVolts(CV_5) * kPitchCvScale + kPitchCvOffset;
     p.pitchV             = (n[0].value * 6.f - 3.f) + pitchCv; // knob spans 6 octaves around C4
 
-    p.ratioLock = toggle.Pressed();
+    p.ratioLock = layers.ratioLock;
     if (p.ratioLock) {
         p.ratio = cosc::quantizeRatio(n[1].value + cvVolts(CV_8) * 0.1f);
     } else {
@@ -127,6 +134,12 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, s
     // Shift knob 3 centred = no bias; IN_R adds +-1 per +-5 V.
     p.symmetry = (s[2].value * 2.f - 1.f) + in[1][0] * inSign * kAudioFullScaleV * 0.2f;
     p.modShape = static_cast<cosc::ModShape>(static_cast<int>(cosc::clampf(s[3].value, 0.f, 0.999f) * static_cast<float>(cosc::ModShape::Count)));
+
+    // Unison layer: voices in 4 zones, then spread, drift and sub.
+    p.voices = 1 + static_cast<int>(cosc::clampf(u[0].value, 0.f, 0.999f) * 4.f);
+    p.spread = u[1].value;
+    p.drift  = u[2].value;
+    p.sub    = u[3].value;
 
     const Routing& r = kRoutings[routing];
     p.amDepth        = r.amDepth;
@@ -145,10 +158,13 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, s
         lastMod   = mod;
     }
 
-    // CV outs are 0..5 V. Modulator as unipolar CV. LED: full while shift is
-    // held, otherwise its brightness shows the routing mode.
+    // CV outs are 0..5 V. Modulator as unipolar CV. LED: full on the shift
+    // layer, blinking on the unison layer, otherwise routing brightness.
     hw.WriteCvOut(CV_OUT_1, cosc::clampf(lastMod * 0.5f + 2.5f, 0.f, 5.f));
-    hw.WriteCvOut(CV_OUT_2, shiftWas ? 5.f : 1.25f * static_cast<float>(routing) + 0.3f);
+    float led = 1.25f * static_cast<float>(routing) + 0.3f;
+    if (layers.layer == kShift) led = 5.f;
+    if (layers.layer == kUnison) led = (System::GetNow() / 125) % 2 ? 5.f : 0.f;
+    hw.WriteCvOut(CV_OUT_2, led);
     cpu.OnBlockEnd();
 }
 
@@ -170,8 +186,9 @@ int main() {
         knobs[kNormal][i].value = rawKnob(i);
         knobs[kNormal][i].last  = rawKnob(i);
     }
+    // The unison layer starts at one voice, no spread, drift or sub: the plain engine.
     knobs[kShift][2].value = 0.5f;
-    for (int i = 0; i < 4; ++i) knobs[kShift][i].fresh = true;
+    for (int i = 0; i < 4; ++i) knobs[kShift][i].fresh = knobs[kUnison][i].fresh = true;
 
     osc.init(hw.AudioSampleRate());
     cpu.Init(hw.AudioSampleRate(), hw.AudioBlockSize());

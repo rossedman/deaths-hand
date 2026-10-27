@@ -1,8 +1,8 @@
-# Five evil patches
+# Six evil patches
 
-Five starting points, rendered in `test/out/ex*.wav` by the same engine the firmware runs (`make test` writes them).
+Six starting points, rendered in `test/out/ex*.wav` by the same engine the firmware runs (`make test` writes them).
 
-Knob positions are clock faces: 7:00 is fully counter-clockwise, 12:00 is centre, 5:00 is fully clockwise. "S1"–"S4" means hold the button and turn knob 1–4. Routing is the number of taps after power-on.
+Knob positions are clock faces: 7:00 is fully counter-clockwise, 12:00 is centre, 5:00 is fully clockwise. "S1"–"S4" means hold the button and turn knob 1–4. Routing is the number of taps after power-on. "U1"–"U4" means hold the button with the toggle flipped down (the [unison layer](patch-init.md#unison-layer)) and turn knob 1–4.
 
 ## 1 · Reactor hum
 
@@ -33,3 +33,9 @@ Toggle up, routing 0. K2 10:15 (ratio 1.5), K3 9:00, K4 1:00, S3 10:00. Together
 Everything on: ring mod, feedback, rising chaos, then the modulator turns chaotic.
 
 Toggle up, routing 3. K1 10:15, K2 11:00 (ratio 2), K3 11:30, S1 12:00, S3 2:30, S4 2:00 (square). Sweep **K4 from 10:00 to 3:00** and **S2 from 7:00 to 2:00**, then **flip S4 to 4:00** (Lorenz) halfway.
+
+## 6 · Legion
+
+Four drifting voices, a sub rising underneath, the fold opening.
+
+Toggle up, routing 0. K1 8:40, K2 9:15 (ratio 1), K3 8:30, S1 9:00. Hold the button, **flip the toggle down** for the unison layer: U1 fully clockwise (4 voices), U2 11:00, U3 12:00. Flip the toggle back up before you let go. Then sweep **K4 from 9:30 to 1:00**, and on the unison layer bring **U4 from 7:00 to 2:00**.

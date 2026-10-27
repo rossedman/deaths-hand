@@ -22,6 +22,11 @@ struct ComplexOscModule : Module {
         CHAOS_PARAM,
         FEEDBACK_CV_ATTEN_PARAM,
         CHAOS_CV_ATTEN_PARAM,
+        // Unison stack. Not on the panel (16 HP is full); set from the context menu.
+        VOICES_PARAM,
+        SPREAD_PARAM,
+        DRIFT_PARAM,
+        SUB_PARAM,
         PARAMS_LEN
     };
     enum InputId {
@@ -72,6 +77,10 @@ struct ComplexOscModule : Module {
         configParam(CHAOS_PARAM, 0.f, 1.f, 0.f, "Chaos (primary → modulator FM)", "%", 0.f, 100.f);
         configParam(FEEDBACK_CV_ATTEN_PARAM, -1.f, 1.f, 0.f, "Feedback CV", "%", 0.f, 100.f);
         configParam(CHAOS_CV_ATTEN_PARAM, -1.f, 1.f, 0.f, "Chaos CV", "%", 0.f, 100.f);
+        configSwitch(VOICES_PARAM, 1.f, 4.f, 1.f, "Unison voices", {"1", "2", "3", "4"});
+        configParam(SPREAD_PARAM, 0.f, 1.f, 0.f, "Unison spread", "%", 0.f, 100.f);
+        configParam(DRIFT_PARAM, 0.f, 1.f, 0.f, "Unison drift", "%", 0.f, 100.f);
+        configParam(SUB_PARAM, 0.f, 1.f, 0.f, "Sub (one octave down)", "%", 0.f, 100.f);
         configInput(VOCT_INPUT, "Primary 1V/oct");
         configInput(MOD_VOCT_INPUT, "Modulator 1V/oct (free) / ratio offset (lock)");
         configInput(FM_INDEX_INPUT, "FM index CV");
@@ -105,6 +114,10 @@ struct ComplexOscModule : Module {
         p.feedback  = params[FEEDBACK_PARAM].getValue() + params[FEEDBACK_CV_ATTEN_PARAM].getValue() * inputs[FEEDBACK_INPUT].getVoltage() / 5.f;
         p.chaos     = params[CHAOS_PARAM].getValue() + params[CHAOS_CV_ATTEN_PARAM].getValue() * inputs[CHAOS_INPUT].getVoltage() / 5.f;
         p.modShape  = static_cast<cosc::ModShape>(static_cast<int>(params[MOD_SHAPE_PARAM].getValue()));
+        p.voices    = static_cast<int>(params[VOICES_PARAM].getValue());
+        p.spread    = params[SPREAD_PARAM].getValue();
+        p.drift     = params[DRIFT_PARAM].getValue();
+        p.sub       = params[SUB_PARAM].getValue();
         osc.setParams(p);
     }
 
@@ -167,6 +180,24 @@ struct ComplexOscWidget : ModuleWidget {
 
         addOutput(createOutputCentered<PJ301MPort>(at(panel::MOD_OUTPUT), module, M::MOD_OUTPUT));
         addOutput(createOutputCentered<PJ301MPort>(at(panel::PRIMARY_OUTPUT), module, M::PRIMARY_OUTPUT));
+    }
+
+    // The unison stack lives in the context menu, as on the patch.Init's third layer.
+    void appendContextMenu(Menu* menu) override {
+        auto* m = dynamic_cast<ComplexOscModule*>(module);
+        if (!m) return;
+        using M = ComplexOscModule;
+        menu->addChild(new MenuSeparator);
+        menu->addChild(createMenuLabel("Unison"));
+        menu->addChild(createIndexSubmenuItem(
+            "Voices", {"1", "2", "3", "4"}, [=]() { return static_cast<size_t>(m->params[M::VOICES_PARAM].getValue()) - 1; },
+            [=](size_t i) { m->params[M::VOICES_PARAM].setValue(static_cast<float>(i + 1)); }));
+        for (int id : {M::SPREAD_PARAM, M::DRIFT_PARAM, M::SUB_PARAM}) {
+            auto* slider       = new ui::Slider;
+            slider->quantity   = m->paramQuantities[id];
+            slider->box.size.x = 200.f;
+            menu->addChild(slider);
+        }
     }
 };
 
