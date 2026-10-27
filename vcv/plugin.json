@@ -1,0 +1,23 @@
+{
+  "slug": "RossComplexOsc",
+  "name": "Ross Complex Osc",
+  "version": "2.0.0",
+  "license": "MIT",
+  "brand": "Ross",
+  "author": "Ross Edman",
+  "authorEmail": "",
+  "authorUrl": "",
+  "pluginUrl": "",
+  "manualUrl": "",
+  "sourceUrl": "",
+  "donateUrl": "",
+  "changelogUrl": "",
+  "modules": [
+    {
+      "slug": "ComplexOsc",
+      "name": "Complex Osc",
+      "description": "West-coast complex oscillator: through-zero FM, wavefolder, AM/ring. Same DSP as the patch.Init firmware.",
+      "tags": ["VCO", "Waveshaper"]
+    }
+  ]
+}

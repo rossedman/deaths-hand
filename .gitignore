@@ -1,0 +1,7 @@
+build/
+test/out/
+vcv/dist/
+vcv/*.so
+vcv/*.dylib
+vcv/*.dll
+.DS_Store
