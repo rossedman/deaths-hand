@@ -48,7 +48,7 @@ CI also builds the firmware and the VCV plugin on every pull request.
 
 ## Versions
 
-The project version is in `VERSION` (semantic versioning, `0.x` while the panel and sound may still change), and a release is a `v<VERSION>` tag. `vcv/plugin.json` has its own version because VCV Rack 2 only loads plugins whose version starts with `2.`: bump its minor or patch number in a release that changes the plugin. The release workflow checks both.
+The project version is in `VERSION` (semantic versioning, `0.x` while the panel and sound may still change), and a release is a `v<VERSION>` tag. `vcv/plugin.json` has its own version because VCV Rack 2 only loads plugins whose version starts with `2.`: bump its minor or patch number in a release that changes the plugin. The release workflow checks both. To release, either push a `v<VERSION>` tag or draft and publish a release with that tag in GitHub's UI; either way the workflow builds, signs and attaches every asset.
 
 ## Commits and pull requests
 
