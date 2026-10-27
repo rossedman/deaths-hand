@@ -18,6 +18,6 @@ scripts/fetch-rack-sdk.sh ../Rack-SDK lin-x64   # or win-x64, mac-x64, mac-arm64
 make vcv RACK_DIR=../Rack-SDK                   # vcv/dist/DeathsHand-<version>-<platform>.vcvplugin
 ```
 
-On Windows, build in an MSYS2 MinGW 64-bit shell with `mingw-w64-x86_64-gcc`, `mingw-w64-x86_64-jq`, `make`, `unzip` and `zstd` installed. On an Apple silicon Mac, `make -C vcv RACK_DIR=<mac-x64 SDK> CROSS_COMPILE=x86_64-apple-darwin dist` builds the Intel package.
+On Windows, build in an MSYS2 MinGW 64-bit shell with `mingw-w64-x86_64-gcc`, `jq`, `make`, `unzip` and `zstd` installed. On an Apple silicon Mac, `make -C vcv RACK_DIR=<mac-x64 SDK> CROSS_COMPILE=x86_64-apple-darwin dist` builds the Intel package.
 
 Every release carries signed packages for all four: Linux x64, Windows x64, macOS x64 and macOS arm64.

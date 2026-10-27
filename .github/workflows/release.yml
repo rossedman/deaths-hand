@@ -103,7 +103,7 @@ jobs:
             zstd
             tar
             mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-jq
+            jq
       - name: Build
         run: |
           scripts/fetch-rack-sdk.sh "$PWD/../Rack-SDK" win-x64
