@@ -9,11 +9,13 @@ struct ComplexOscModule : Module {
         PITCH_PARAM, FINE_PARAM, MOD_PITCH_PARAM, FM_INDEX_PARAM,
         TIMBRE_PARAM, SYMMETRY_PARAM, AM_PARAM, TIMBRE_MOD_PARAM,
         RATIO_LOCK_PARAM, MOD_SHAPE_PARAM, FM_CV_ATTEN_PARAM, TIMBRE_CV_ATTEN_PARAM,
+        FEEDBACK_PARAM, CHAOS_PARAM, FEEDBACK_CV_ATTEN_PARAM, CHAOS_CV_ATTEN_PARAM,
         PARAMS_LEN
     };
     enum InputId {
         VOCT_INPUT, MOD_VOCT_INPUT, FM_INDEX_INPUT, TIMBRE_INPUT,
         SYMMETRY_INPUT, AM_INPUT, EXT_FM_INPUT, SYNC_INPUT,
+        FEEDBACK_INPUT, CHAOS_INPUT,
         INPUTS_LEN
     };
     enum OutputId { PRIMARY_OUTPUT, MOD_OUTPUT, OUTPUTS_LEN };
@@ -45,9 +47,13 @@ struct ComplexOscModule : Module {
         configParam(AM_PARAM, 0.f, 1.f, 0.f, "AM → ring mod", "%", 0.f, 100.f);
         configParam(TIMBRE_MOD_PARAM, 0.f, 1.f, 0.f, "Modulator → timbre", "%", 0.f, 100.f);
         configSwitch(RATIO_LOCK_PARAM, 0.f, 1.f, 1.f, "Modulator", {"Free", "Ratio lock"});
-        configSwitch(MOD_SHAPE_PARAM, 0.f, 3.f, 0.f, "Modulator shape", {"Sine", "Triangle", "Saw", "Square"});
+        configSwitch(MOD_SHAPE_PARAM, 0.f, 4.f, 0.f, "Modulator shape", {"Sine", "Triangle", "Saw", "Square", "Lorenz"});
         configParam(FM_CV_ATTEN_PARAM, -1.f, 1.f, 0.f, "FM index CV", "%", 0.f, 100.f);
         configParam(TIMBRE_CV_ATTEN_PARAM, -1.f, 1.f, 0.f, "Timbre CV", "%", 0.f, 100.f);
+        configParam(FEEDBACK_PARAM, 0.f, 1.f, 0.f, "Self-feedback", "%", 0.f, 100.f);
+        configParam(CHAOS_PARAM, 0.f, 1.f, 0.f, "Chaos (primary → modulator FM)", "%", 0.f, 100.f);
+        configParam(FEEDBACK_CV_ATTEN_PARAM, -1.f, 1.f, 0.f, "Feedback CV", "%", 0.f, 100.f);
+        configParam(CHAOS_CV_ATTEN_PARAM, -1.f, 1.f, 0.f, "Chaos CV", "%", 0.f, 100.f);
         configInput(VOCT_INPUT, "Primary 1V/oct");
         configInput(MOD_VOCT_INPUT, "Modulator 1V/oct (free) / ratio offset (lock)");
         configInput(FM_INDEX_INPUT, "FM index CV");
@@ -56,6 +62,8 @@ struct ComplexOscModule : Module {
         configInput(AM_INPUT, "AM CV (0–10 V)");
         configInput(EXT_FM_INPUT, "External FM (audio)");
         configInput(SYNC_INPUT, "Hard sync");
+        configInput(FEEDBACK_INPUT, "Feedback CV");
+        configInput(CHAOS_INPUT, "Chaos CV");
         configOutput(PRIMARY_OUTPUT, "Primary");
         configOutput(MOD_OUTPUT, "Modulator");
         paramDivider.setDivision(4);
@@ -81,6 +89,10 @@ struct ComplexOscModule : Module {
         p.symmetry  = params[SYMMETRY_PARAM].getValue() + inputs[SYMMETRY_INPUT].getVoltage() / 5.f;
         p.amDepth   = params[AM_PARAM].getValue() + inputs[AM_INPUT].getVoltage() / 10.f;
         p.timbreMod = params[TIMBRE_MOD_PARAM].getValue();
+        p.feedback  = params[FEEDBACK_PARAM].getValue() +
+                     params[FEEDBACK_CV_ATTEN_PARAM].getValue() * inputs[FEEDBACK_INPUT].getVoltage() / 5.f;
+        p.chaos = params[CHAOS_PARAM].getValue() +
+                  params[CHAOS_CV_ATTEN_PARAM].getValue() * inputs[CHAOS_INPUT].getVoltage() / 5.f;
         p.modShape  = static_cast<cosc::ModShape>(static_cast<int>(params[MOD_SHAPE_PARAM].getValue()));
         osc.setParams(p);
     }
@@ -126,6 +138,10 @@ struct ComplexOscWidget : ModuleWidget {
         addParam(createParamCentered<RoundBlackSnapKnob>(at(panel::MOD_SHAPE_PARAM), module, M::MOD_SHAPE_PARAM));
         addParam(createParamCentered<Trimpot>(at(panel::FM_CV_ATTEN_PARAM), module, M::FM_CV_ATTEN_PARAM));
         addParam(createParamCentered<Trimpot>(at(panel::TIMBRE_CV_ATTEN_PARAM), module, M::TIMBRE_CV_ATTEN_PARAM));
+        addParam(createParamCentered<RoundBlackKnob>(at(panel::FEEDBACK_PARAM), module, M::FEEDBACK_PARAM));
+        addParam(createParamCentered<RoundBlackKnob>(at(panel::CHAOS_PARAM), module, M::CHAOS_PARAM));
+        addParam(createParamCentered<Trimpot>(at(panel::FEEDBACK_CV_ATTEN_PARAM), module, M::FEEDBACK_CV_ATTEN_PARAM));
+        addParam(createParamCentered<Trimpot>(at(panel::CHAOS_CV_ATTEN_PARAM), module, M::CHAOS_CV_ATTEN_PARAM));
 
         addInput(createInputCentered<PJ301MPort>(at(panel::VOCT_INPUT), module, M::VOCT_INPUT));
         addInput(createInputCentered<PJ301MPort>(at(panel::MOD_VOCT_INPUT), module, M::MOD_VOCT_INPUT));
@@ -135,6 +151,8 @@ struct ComplexOscWidget : ModuleWidget {
         addInput(createInputCentered<PJ301MPort>(at(panel::AM_INPUT), module, M::AM_INPUT));
         addInput(createInputCentered<PJ301MPort>(at(panel::EXT_FM_INPUT), module, M::EXT_FM_INPUT));
         addInput(createInputCentered<PJ301MPort>(at(panel::SYNC_INPUT), module, M::SYNC_INPUT));
+        addInput(createInputCentered<PJ301MPort>(at(panel::FEEDBACK_INPUT), module, M::FEEDBACK_INPUT));
+        addInput(createInputCentered<PJ301MPort>(at(panel::CHAOS_INPUT), module, M::CHAOS_INPUT));
 
         addOutput(createOutputCentered<PJ301MPort>(at(panel::MOD_OUTPUT), module, M::MOD_OUTPUT));
         addOutput(createOutputCentered<PJ301MPort>(at(panel::PRIMARY_OUTPUT), module, M::PRIMARY_OUTPUT));

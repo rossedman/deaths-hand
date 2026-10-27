@@ -3,26 +3,32 @@
 
 namespace panel {
 struct Pos { float x, y; }; // millimetres from the top-left
-constexpr Pos PITCH_PARAM = {11.50f, 27.00f};
-constexpr Pos FINE_PARAM = {30.80f, 27.00f};
-constexpr Pos MOD_PITCH_PARAM = {50.40f, 27.00f};
-constexpr Pos FM_INDEX_PARAM = {69.80f, 27.00f};
-constexpr Pos TIMBRE_PARAM = {11.50f, 47.00f};
-constexpr Pos SYMMETRY_PARAM = {30.80f, 47.00f};
-constexpr Pos AM_PARAM = {50.40f, 47.00f};
-constexpr Pos TIMBRE_MOD_PARAM = {69.80f, 47.00f};
-constexpr Pos RATIO_LOCK_PARAM = {11.50f, 65.00f};
-constexpr Pos MOD_SHAPE_PARAM = {30.80f, 65.00f};
-constexpr Pos FM_CV_ATTEN_PARAM = {50.40f, 65.00f};
-constexpr Pos TIMBRE_CV_ATTEN_PARAM = {69.80f, 65.00f};
-constexpr Pos VOCT_INPUT = {11.50f, 85.00f};
-constexpr Pos MOD_VOCT_INPUT = {30.80f, 85.00f};
-constexpr Pos FM_INDEX_INPUT = {50.40f, 85.00f};
-constexpr Pos TIMBRE_INPUT = {69.80f, 85.00f};
-constexpr Pos SYMMETRY_INPUT = {11.50f, 101.00f};
-constexpr Pos AM_INPUT = {30.80f, 101.00f};
-constexpr Pos EXT_FM_INPUT = {50.40f, 101.00f};
-constexpr Pos SYNC_INPUT = {69.80f, 101.00f};
+constexpr Pos PITCH_PARAM = {11.50f, 26.00f};
+constexpr Pos FINE_PARAM = {30.80f, 26.00f};
+constexpr Pos MOD_PITCH_PARAM = {50.40f, 26.00f};
+constexpr Pos FM_INDEX_PARAM = {69.80f, 26.00f};
+constexpr Pos TIMBRE_PARAM = {11.50f, 45.00f};
+constexpr Pos SYMMETRY_PARAM = {30.80f, 45.00f};
+constexpr Pos AM_PARAM = {50.40f, 45.00f};
+constexpr Pos TIMBRE_MOD_PARAM = {69.80f, 45.00f};
+constexpr Pos FEEDBACK_PARAM = {11.50f, 61.00f};
+constexpr Pos CHAOS_PARAM = {30.80f, 61.00f};
+constexpr Pos MOD_SHAPE_PARAM = {50.40f, 61.00f};
+constexpr Pos RATIO_LOCK_PARAM = {69.80f, 61.00f};
+constexpr Pos FM_CV_ATTEN_PARAM = {11.50f, 74.00f};
+constexpr Pos TIMBRE_CV_ATTEN_PARAM = {30.80f, 74.00f};
+constexpr Pos FEEDBACK_CV_ATTEN_PARAM = {50.40f, 74.00f};
+constexpr Pos CHAOS_CV_ATTEN_PARAM = {69.80f, 74.00f};
+constexpr Pos VOCT_INPUT = {11.50f, 89.00f};
+constexpr Pos MOD_VOCT_INPUT = {30.80f, 89.00f};
+constexpr Pos FM_INDEX_INPUT = {50.40f, 89.00f};
+constexpr Pos TIMBRE_INPUT = {69.80f, 89.00f};
+constexpr Pos SYMMETRY_INPUT = {11.50f, 103.00f};
+constexpr Pos AM_INPUT = {30.80f, 103.00f};
+constexpr Pos EXT_FM_INPUT = {50.40f, 103.00f};
+constexpr Pos SYNC_INPUT = {69.80f, 103.00f};
+constexpr Pos FEEDBACK_INPUT = {11.50f, 117.00f};
+constexpr Pos CHAOS_INPUT = {30.80f, 117.00f};
 constexpr Pos MOD_OUTPUT = {50.40f, 117.00f};
 constexpr Pos PRIMARY_OUTPUT = {69.80f, 117.00f};
 } // namespace panel

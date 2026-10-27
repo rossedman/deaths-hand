@@ -79,7 +79,7 @@ struct DcBlocker {
 
 // Transparent below |x| = knee, then bends smoothly toward +-ceiling.
 // Run it at the oversampled rate so the bend itself doesn't alias.
-inline float softLimit(float x, float knee = 1.0f, float ceiling = 1.3f) {
+inline float softLimit(float x, float knee = 1.0f, float ceiling = 1.2f) {
     float a = std::fabs(x);
     if (a <= knee) return x;
     float w = ceiling - knee;

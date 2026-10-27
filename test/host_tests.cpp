@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "../dsp/ComplexOsc.hpp"
+#include "../dsp/Pickup.hpp"
 
 using namespace cosc;
 
@@ -123,6 +124,8 @@ static void testStabilityUnderAbuse() {
         p.timbre    = u(rng) * 1.5f;
         p.symmetry  = -1.5f + u(rng) * 3.f;
         p.timbreMod = u(rng);
+        p.feedback  = u(rng) * 1.5f;          // over-range on purpose
+        p.chaos     = u(rng) * 1.5f;
         p.modShape  = static_cast<ModShape>(block % static_cast<int>(ModShape::Count));
         osc.setParams(p);
         if (block % 97 == 0) osc.sync();
@@ -135,7 +138,7 @@ static void testStabilityUnderAbuse() {
     }
     std::printf("  peak output %.2f V, finite: %s\n", peak, bad ? "NO" : "yes");
     CHECK(!bad, "non-finite output");
-    // Limiter ceiling is 6.25 V; band-limiting a limited wave adds ~10% Gibbs overshoot.
+    // Limiter ceiling is 6 V; band-limiting a limited wave adds ~15% Gibbs overshoot.
     CHECK(peak < 7.5f, "output peak %.2f V exceeds the +-7.5 V budget", peak);
 }
 
@@ -159,6 +162,181 @@ static void testThroughZero() {
     double rms = std::sqrt(energy / 48000.0);
     std::printf("  rms %.2f V\n", rms);
     CHECK(rms > 1.0, "output collapsed under TZFM (rms %.3f)", rms);
+}
+
+// Energy of a Hann-windowed signal that is NOT on harmonics of f0 (0..1).
+// f0 must land on an exact FFT bin of the buffer (1 Hz bins for 1 s at 48 kHz).
+static double nonHarmonicRatio(const std::vector<float>& x, double f0, std::vector<double>* harmDb = nullptr) {
+    const size_t n = x.size();
+    std::vector<double> w(n);
+    double total = 0.0;
+    for (size_t i = 0; i < n; ++i) {
+        double hann = 0.5 - 0.5 * std::cos(2.0 * 3.14159265358979 * i / n);
+        w[i] = x[i] * hann;
+        total += w[i] * w[i];
+    }
+    total *= static_cast<double>(n); // Parseval: sum |X_k|^2 over all bins
+    auto binPower = [&](double k) {  // Goertzel at an exact bin
+        double c = 2.0 * std::cos(2.0 * 3.14159265358979 * k / n), s1 = 0, s2 = 0;
+        for (double v : w) { double s0 = v + c * s1 - s2; s2 = s1; s1 = s0; }
+        return s1 * s1 + s2 * s2 - c * s1 * s2;
+    };
+    double harm = 0.0, fund = 0.0;
+    for (int h = 1; h * f0 < kFs / 2 - 2; ++h) {
+        double k = h * f0, e = 0.0;
+        for (int d = -1; d <= 1; ++d) e += 2.0 * binPower(k + d); // Hann main lobe, +/- freqs
+        harm += e;
+        if (h == 1) fund = e;
+        if (harmDb && h <= 8) harmDb->push_back(10.0 * std::log10(e / fund + 1e-30));
+    }
+    return std::max(0.0, 1.0 - harm / total);
+}
+
+static std::vector<float> renderTone(Params p, int seconds = 1) {
+    static ComplexOsc<4> osc;
+    osc.init(kFs);
+    osc.setParams(p);
+    osc.snapSmoothers();
+    float a, b;
+    for (int i = 0; i < 12000; ++i) osc.process(0.f, a, b); // settle
+    std::vector<float> out(static_cast<size_t>(kFs) * seconds);
+    for (float& v : out) osc.process(0.f, v, b);
+    return out;
+}
+
+static void testFeedback() {
+    std::printf("self-feedback: sine -> saw-like -> noise\n");
+    const float v440 = std::log2(440.f / kC4Hz); // 440 Hz lands on exact 1 Hz bins
+    double prevNoise = -1.0;
+    for (float fb : {0.f, 0.5f, 0.75f, 1.f}) {
+        Params p;
+        p.pitchV   = v440;
+        p.feedback = fb;
+        std::vector<double> h;
+        double noise = nonHarmonicRatio(renderTone(p), 440.0, &h);
+        std::printf("  fb %.2f  H2 %6.1f dB  H3 %6.1f dB  H5 %6.1f dB  non-harmonic %6.1f dB\n", fb, h[1], h[2], h[4],
+                    10.0 * std::log10(noise + 1e-30));
+        if (fb == 0.f) CHECK(h[1] < -70.0 && h[2] < -70.0, "fb=0 should be a pure sine");
+        if (fb == 0.5f) CHECK(h[1] > -30.0 && h[2] > -40.0, "fb=0.5 should add strong harmonics");
+        if (fb == 1.f) CHECK(noise > prevNoise, "max feedback should be noisier than 0.75");
+        prevNoise = noise;
+    }
+}
+
+static void testChaos() {
+    std::printf("chaos: cross-FM should break periodicity\n");
+    const float v440 = std::log2(440.f / kC4Hz);
+    double base = 0, wild = 0;
+    for (float c : {0.f, 1.f}) {
+        Params p;
+        p.pitchV  = v440;
+        p.ratio   = 1.f;
+        p.fmIndex = 0.4f;
+        p.chaos   = c;
+        double r = nonHarmonicRatio(renderTone(p), 440.0);
+        (c == 0.f ? base : wild) = r;
+        std::printf("  chaos %.0f  non-harmonic %6.1f dB\n", c, 10.0 * std::log10(r + 1e-30));
+    }
+    CHECK(base < 1e-4, "chaos=0 should stay harmonic");
+    CHECK(wild > 100.0 * base && wild > 1e-3, "chaos=1 should produce inharmonic energy");
+}
+
+static void testChaosLongRun() {
+    std::printf("long-run stability: 60 s of worst-case evil per pitch\n");
+    static ComplexOsc<4> osc;
+    for (float v : {-4.f, 0.f, 3.f, 6.f}) {
+        osc.init(kFs);
+        Params p;
+        p.pitchV    = v;
+        p.ratioLock = false;
+        p.modPitchV = v + 0.37f;
+        p.fmIndex   = 1.f;
+        p.feedback  = 1.f;
+        p.chaos     = 1.f;
+        p.timbre    = 1.f;
+        p.symmetry  = 0.8f;
+        p.timbreMod = 1.f;
+        p.amDepth   = 0.5f;
+        p.modShape  = ModShape::Lorenz;
+        osc.setParams(p);
+        osc.snapSmoothers();
+        bool   bad  = false;
+        float  peak = 0.f;
+        double e    = 0.0, mean = 0.0;
+        const int n = static_cast<int>(kFs) * 60, tail = static_cast<int>(kFs);
+        for (int i = 0; i < n; ++i) {
+            float a, b;
+            osc.process(0.f, a, b);
+            if (!std::isfinite(a) || !std::isfinite(b)) bad = true;
+            peak = std::max(peak, std::max(std::fabs(a), std::fabs(b)));
+            if (i >= n - tail) { e += static_cast<double>(a) * a; mean += a; }
+        }
+        double rms = std::sqrt(e / tail);
+        mean /= tail;
+        std::printf("  %+.0f V  peak %.2f V  last-second rms %.2f V  dc %+.3f V  finite %s\n", v, peak, rms, mean,
+                    bad ? "NO" : "yes");
+        CHECK(!bad, "non-finite output at %.0f V", v);
+        CHECK(peak < 7.5f, "peak %.2f V at %.0f V", peak, v);
+        CHECK(rms > 0.2, "output died (rms %.3f) at %.0f V", rms, v);
+        CHECK(std::fabs(mean) < 0.25, "DC lock-up (%.3f V) at %.0f V", mean, v);
+    }
+}
+
+static void testLorenz() {
+    std::printf("Lorenz modulator: bounded and alive from 0.01 Hz to 20 kHz\n");
+    for (float hz : {0.01f, 1.f, 100.f, 1000.f, 20000.f}) {
+        ModOscillator m;
+        m.shape = ModShape::Lorenz;
+        float lo = 1.f, hi = -1.f;
+        bool  bad = false;
+        const float inc = hz / (kFs * 4.f);
+        for (int i = 0; i < 192000 * 20; ++i) {
+            float y = m.process(inc);
+            if (!std::isfinite(y)) bad = true;
+            lo = std::min(lo, y);
+            hi = std::max(hi, y);
+        }
+        std::printf("  %8.2f Hz  range [%+.2f, %+.2f]\n", hz, lo, hi);
+        CHECK(!bad, "Lorenz non-finite at %.2f Hz", hz);
+        if (hz >= 1.f) CHECK(hi - lo > 0.8f, "Lorenz stuck at %.2f Hz", hz);
+    }
+}
+
+static void testPickup() {
+    std::printf("shift-layer pickup: no jumps on layer change\n");
+    PickupKnob k;
+    k.value = 0.3f;              // stored parameter
+    k.lock(0.8f);                // knob is physically at 0.8 when the layer becomes active
+    CHECK(k.locked, "should lock when knob and value disagree");
+    k.update(0.7f);
+    CHECK(std::fabs(k.value - 0.3f) < 1e-6f, "moved before pickup (value %.3f)", k.value);
+    k.update(0.31f);             // approaching, not yet crossed (outside 0.02 window? no: 0.01 away)
+    CHECK(!k.locked, "should pick up within the 0.02 window");
+    k.update(0.5f);
+    CHECK(std::fabs(k.value - 0.5f) < 1e-6f, "should track after pickup (value %.3f)", k.value);
+
+    PickupKnob c;                // crossing in one jump (fast twist)
+    c.value = 0.5f;
+    c.lock(0.1f);
+    c.update(0.9f);
+    CHECK(!c.locked && std::fabs(c.value - 0.9f) < 1e-6f, "should pick up when crossing (value %.3f)", c.value);
+
+    PickupKnob same;             // already matching: no lock
+    same.value = 0.4f;
+    same.lock(0.405f);
+    CHECK(!same.locked, "should not lock when already matching");
+    PickupKnob fr;               // factory default: grab on first deliberate move
+    fr.value = 0.f;
+    fr.fresh = true;
+    fr.lock(0.7f);
+    fr.update(0.705f);           // jitter: not a move
+    CHECK(fr.locked && fr.value == 0.f, "fresh knob grabbed on jitter");
+    fr.update(0.75f);
+    CHECK(!fr.locked && std::fabs(fr.value - 0.75f) < 1e-6f, "fresh knob should grab on move (%.3f)", fr.value);
+    fr.lock(0.2f);               // after that it behaves like any other knob
+    fr.update(0.3f);
+    CHECK(fr.locked && std::fabs(fr.value - 0.75f) < 1e-6f, "touched knob must use crossing pickup");
+    std::printf("  ok\n");
 }
 
 template <int OS>
@@ -214,6 +392,67 @@ static void renderAll(const std::string& dir) {
         p.amDepth    = 0.f;
         p.modShape   = ModShape::Sine;
     });
+
+    // New evil: feedback sweep, chaos sweep.
+    render<4>(dir + "/feedback_sweep.wav", 8.f, [](float t, Params& p) { p.pitchV = -1.f; p.feedback = t; });
+    render<4>(dir + "/chaos_sweep.wav", 8.f, [](float t, Params& p) {
+        p.pitchV = -1.f; p.ratio = 1.f; p.fmIndex = 0.35f; p.chaos = t;
+    });
+}
+
+// ---------------------------------------------------------------- examples
+// Five presets, each written as patch.Init knob positions (0..1 = 7 o'clock..5 o'clock)
+// so they can be dialed in by hand. See README "Five evil patches".
+struct Example {
+    const char* file;
+    const char* name;
+    std::function<void(float, Params&)> automate;
+};
+
+static void renderExamples(const std::string& dir) {
+    std::printf("examples\n");
+    // Every value below is reachable on patch.Init: routing values match the
+    // button presets exactly, and motion is a knob turn or a patched CV.
+    const Example examples[] = {
+        {"ex1_reactor_hum.wav", "Reactor hum",
+         [](float t, Params& p) { // low drone; rock shift-K1 to make the feedback breathe
+             p.pitchV = -2.f; p.ratio = 0.5f; p.fmIndex = 0.12f; p.timbre = 0.35f;
+             p.feedback = 0.55f + 0.25f * std::sin(t * 6.283f * 1.5f);
+             p.symmetry = 0.3f;                                 // routing 0: FM only
+         }},
+        {"ex2_lorenz_growl.wav", "Lorenz growl",
+         [](float t, Params& p) { // chaotic modulator in audio range: an engine that won't idle
+             p.pitchV = -1.5f; p.ratioLock = false; p.modPitchV = -1.2f; p.modShape = ModShape::Lorenz;
+             p.fmIndex = 0.3f + 0.2f * t; p.timbre = 0.4f;
+             p.timbreMod = 0.6f;                                // routing 1: FM + timbre mod
+         }},
+        {"ex3_chaos_bells.wav", "Chaos bells",
+         [](float t, Params& p) { // sequencer -> CV_5, decaying envelope -> CV_6, chaos rises
+             static const float notes[] = {0, 7, 3, 10, 5, 12, 1, 8};
+             float step = t * 16.f;
+             int   i    = static_cast<int>(step) % 8;
+             float env  = std::exp(-5.f * (step - std::floor(step)));
+             p.pitchV = notes[i] / 12.f; p.ratio = 3.f; p.fmIndex = 0.5f * env;
+             p.chaos = 0.2f + 0.6f * t; p.timbre = 0.1f;
+             p.amDepth = 0.5f;                                  // routing 2: FM + AM
+         }},
+        {"ex4_feedback_scream.wav", "Feedback scream",
+         [](float t, Params& p) { // pitch dives while feedback pushes past saw into noise
+             p.pitchV = 2.5f - 4.f * t; p.feedback = 0.6f + 0.4f * t; p.fmIndex = 0.2f;
+             p.ratio = 1.5f; p.timbre = 0.6f; p.symmetry = -0.4f; // routing 0
+         }},
+        {"ex5_possession.wav", "Possession",
+         [](float t, Params& p) { // everything on; flip the modulator to Lorenz halfway
+             p.pitchV = -1.f; p.ratio = 2.f; p.fmIndex = 0.45f; p.feedback = 0.5f;
+             p.chaos = 0.7f * t; p.timbre = 0.3f + 0.5f * t; p.symmetry = 0.5f;
+             p.amDepth = 1.f; p.timbreMod = 0.3f;               // routing 3: FM + ring
+             p.modShape = (t < 0.5f) ? ModShape::Square : ModShape::Lorenz;
+         }},
+    };
+    for (const Example& e : examples) {
+        std::printf("  %s\n", e.name);
+        render<4>(dir + "/" + e.file, 10.f, e.automate);
+    }
 }
 
 int main(int argc, char** argv) {
@@ -221,10 +460,16 @@ int main(int argc, char** argv) {
     testPitchTracking();
     testStabilityUnderAbuse();
     testThroughZero();
+    testFeedback();
+    testChaos();
+    testLorenz();
+    testChaosLongRun();
+    testPickup();
     std::printf("benchmark (host CPU, per output sample)\n");
     std::printf("  OS=1: %6.1f ns   OS=2: %6.1f ns   OS=4: %6.1f ns\n",
                 benchNsPerSample<1>(), benchNsPerSample<2>(), benchNsPerSample<4>());
     renderAll(out);
+    renderExamples(out);
     std::printf(g_failures ? "\n%d FAILURE(S)\n" : "\nall tests passed\n", g_failures);
     return g_failures ? 1 : 0;
 }

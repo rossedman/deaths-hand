@@ -1,9 +1,11 @@
 // ComplexOsc — a West-Coast style complex oscillator engine.
 //
-//   modulator osc ──┬──────────────────────────────► mod out
-//                   │ FM (linear, through-zero)
-//                   ├──► primary osc (sine core)
-//                   │        │
+//        ┌──────────── chaos: primary FMs the modulator back ◄──┐
+//        ▼                                                      │
+//   modulator osc ──┬──────────────────────────────► mod out    │
+//   (incl. Lorenz)  │ FM (linear, through-zero)                 │
+//                   ├──► primary osc (sine core) ◄─ self-feedback PM
+//                   │        │ ─────────────────────────────────┘
 //                   ├──► timbre mod ──► wavefolder (timbre / symmetry)
 //                   │                     │
 //                   └──► AM / ring ──────►×──► DC block ──► primary out
@@ -31,6 +33,8 @@ struct Params {
     float    timbre    = 0.f;   // 0..1 wavefold amount
     float    symmetry  = 0.f;   // -1..1 folder bias (even harmonics)
     float    timbreMod = 0.f;   // 0..1 modulator -> timbre depth
+    float    feedback  = 0.f;   // 0..1 primary self-feedback (sine -> saw-ish -> noise)
+    float    chaos     = 0.f;   // 0..1 primary -> modulator cross-FM
     ModShape modShape  = ModShape::Sine;
 };
 
@@ -40,6 +44,11 @@ class ComplexOsc {
     static constexpr float kMaxFmIndex = 8.f;   // peak deviation = index * carrier freq
     static constexpr float kOutVolts   = 5.f;   // +-5 V, Eurorack audio standard
     static constexpr float kMaxHz      = 20000.f;
+    // Self-feedback depth in turns of phase. ~0.2 gives a saw-like spectrum,
+    // the top of the range tips into noise. Knob is squared for finer control.
+    static constexpr float kMaxFeedback = 0.42f;
+    // Cross-FM depth from primary into the modulator (same units as FM index).
+    static constexpr float kMaxChaos = 4.f;
 
     void init(float sampleRate) {
         fs_    = sampleRate;
@@ -52,7 +61,7 @@ class ComplexOsc {
         sync();
         smPitch_.setTime(0.001f, fs_);
         smModPitch_.setTime(0.001f, fs_);
-        for (Smoother* s : {&smIndex_, &smAm_, &smTimbre_, &smSym_, &smTmod_, &smRatio_})
+        for (Smoother* s : {&smIndex_, &smAm_, &smTimbre_, &smSym_, &smTmod_, &smRatio_, &smFb_, &smChaos_})
             s->setTime(0.01f, fs_);
         setParams(Params{});
         snapSmoothers();
@@ -74,12 +83,15 @@ class ComplexOsc {
         smSym_.reset(p_.symmetry);
         smTmod_.reset(p_.timbreMod);
         smRatio_.reset(p_.ratio);
+        smFb_.reset(p_.feedback);
+        smChaos_.reset(p_.chaos);
     }
 
     // Hard sync: restart both oscillators.
     void sync() {
         primary_.reset();
         mod_.reset();
+        fb1_ = fb2_ = 0.f;
     }
 
     // Render one output sample. extFmVolts is an optional external FM source
@@ -93,6 +105,10 @@ class ComplexOsc {
         const float sym    = clampf(smSym_.process(p_.symmetry), -1.f, 1.f);
         const float tmod   = smTmod_.process(p_.timbreMod);
         const float ratio  = smRatio_.process(p_.ratio);
+        const float fbK    = clampf(smFb_.process(p_.feedback), 0.f, 1.f);
+        const float fbAmt  = fbK * fbK * kMaxFeedback;
+        const float chK    = clampf(smChaos_.process(p_.chaos), 0.f, 1.f);
+        const float chaos  = chK * chK * kMaxChaos; // squared: fine control near zero
 
         const float fc = clampf(voltsToHz(pitchV), 0.05f, kMaxHz);
         const float fm = clampf(p_.ratioLock ? fc * ratio : voltsToHz(modV), 0.01f, kMaxHz);
@@ -100,14 +116,24 @@ class ComplexOsc {
         const float incC = fc / fsInt_;
         const float incM = fm / fsInt_;
         const float ext  = extFmVolts * (1.f / kOutVolts);
+        const float maxInc = kMaxHz / fsInt_;
 
         float yP = 0.f, yM = 0.f;
         for (int i = 0; i < Oversample; ++i) {
-            const float m = mod_.process(incM);
+            // Chaos: the primary's last output FMs the modulator (through-zero too),
+            // so the two oscillators chase each other.
+            // Clamp to +-20 kHz so heavy cross-FM can't push it far past the band limit.
+            const float incX = clampf(incM * (1.f + chaos * fb1_), -maxInc, maxInc);
+            const float m    = softLimit(mod_.process(incX));
 
             // Linear through-zero FM: increment may go negative.
             const float inc = incC * (1.f + index * (m + ext));
-            const float s   = sinTurns(primary_.tick(inc));
+            // Self-feedback phase modulation. Averaging the last two outputs
+            // suppresses the Nyquist-rate "hunting" that raw feedback causes.
+            const float fbIn = 0.5f * (fb1_ + fb2_);
+            const float s    = sinTurns(primary_.tick(inc) + fbAmt * fbIn);
+            fb2_             = fb1_;
+            fb1_             = s;
 
             const float t = clampf(timbre + tmod * m * 0.5f, 0.f, 1.f);
             float       y = folder_.process(s, t, sym);
@@ -139,7 +165,8 @@ class ComplexOsc {
     DcBlocker     dc_;
     Decimator<Oversample, DecimTaps> decPrimary_, decMod_;
 
-    Smoother smPitch_, smModPitch_, smIndex_, smAm_, smTimbre_, smSym_, smTmod_, smRatio_;
+    Smoother smPitch_, smModPitch_, smIndex_, smAm_, smTimbre_, smSym_, smTmod_, smRatio_, smFb_, smChaos_;
+    float    fb1_ = 0.f, fb2_ = 0.f; // last two primary core outputs (feedback + chaos)
 };
 
 // Musically useful FM ratios for a quantized "ratio" knob (harmonic spectra).

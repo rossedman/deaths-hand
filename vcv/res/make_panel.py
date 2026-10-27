@@ -22,26 +22,32 @@ BG, FG, ACCENT, OUTBOX = "#1d1f24", "#e8e6e1", "#f2a541", "#2e3138"
 # (kind, enum name, x, y, label)
 #   kind: knob_l, knob_m, trim, snap, switch, in, out
 CONTROLS = [
-    ("knob_l", "PITCH_PARAM", COLS[0], 27, "PITCH"),
-    ("knob_m", "FINE_PARAM", COLS[1], 27, "FINE"),
-    ("knob_l", "MOD_PITCH_PARAM", COLS[2], 27, "RATIO/MOD"),
-    ("knob_l", "FM_INDEX_PARAM", COLS[3], 27, "FM INDEX"),
-    ("knob_m", "TIMBRE_PARAM", COLS[0], 47, "TIMBRE"),
-    ("knob_m", "SYMMETRY_PARAM", COLS[1], 47, "SYMMETRY"),
-    ("knob_m", "AM_PARAM", COLS[2], 47, "AM/RING"),
-    ("knob_m", "TIMBRE_MOD_PARAM", COLS[3], 47, "T. MOD"),
-    ("switch", "RATIO_LOCK_PARAM", COLS[0], 65, "LOCK"),
-    ("snap", "MOD_SHAPE_PARAM", COLS[1], 65, "SHAPE"),
-    ("trim", "FM_CV_ATTEN_PARAM", COLS[2], 65, "FM CV"),
-    ("trim", "TIMBRE_CV_ATTEN_PARAM", COLS[3], 65, "TIM CV"),
-    ("in", "VOCT_INPUT", COLS[0], 85, "V/OCT"),
-    ("in", "MOD_VOCT_INPUT", COLS[1], 85, "MOD V/O"),
-    ("in", "FM_INDEX_INPUT", COLS[2], 85, "INDEX"),
-    ("in", "TIMBRE_INPUT", COLS[3], 85, "TIMBRE"),
-    ("in", "SYMMETRY_INPUT", COLS[0], 101, "SYM"),
-    ("in", "AM_INPUT", COLS[1], 101, "AM"),
-    ("in", "EXT_FM_INPUT", COLS[2], 101, "EXT FM"),
-    ("in", "SYNC_INPUT", COLS[3], 101, "SYNC"),
+    ("knob_l", "PITCH_PARAM", COLS[0], 26, "PITCH"),
+    ("knob_m", "FINE_PARAM", COLS[1], 26, "FINE"),
+    ("knob_l", "MOD_PITCH_PARAM", COLS[2], 26, "RATIO/MOD"),
+    ("knob_l", "FM_INDEX_PARAM", COLS[3], 26, "FM INDEX"),
+    ("knob_m", "TIMBRE_PARAM", COLS[0], 45, "TIMBRE"),
+    ("knob_m", "SYMMETRY_PARAM", COLS[1], 45, "SYMMETRY"),
+    ("knob_m", "AM_PARAM", COLS[2], 45, "AM/RING"),
+    ("knob_m", "TIMBRE_MOD_PARAM", COLS[3], 45, "T. MOD"),
+    ("knob_m", "FEEDBACK_PARAM", COLS[0], 61, "FEEDBACK"),
+    ("knob_m", "CHAOS_PARAM", COLS[1], 61, "CHAOS"),
+    ("snap", "MOD_SHAPE_PARAM", COLS[2], 61, "SHAPE"),
+    ("switch", "RATIO_LOCK_PARAM", COLS[3], 61, "LOCK"),
+    ("trim", "FM_CV_ATTEN_PARAM", COLS[0], 74, "FM CV"),
+    ("trim", "TIMBRE_CV_ATTEN_PARAM", COLS[1], 74, "TIM CV"),
+    ("trim", "FEEDBACK_CV_ATTEN_PARAM", COLS[2], 74, "FB CV"),
+    ("trim", "CHAOS_CV_ATTEN_PARAM", COLS[3], 74, "CHS CV"),
+    ("in", "VOCT_INPUT", COLS[0], 89, "V/OCT"),
+    ("in", "MOD_VOCT_INPUT", COLS[1], 89, "MOD V/O"),
+    ("in", "FM_INDEX_INPUT", COLS[2], 89, "INDEX"),
+    ("in", "TIMBRE_INPUT", COLS[3], 89, "TIMBRE"),
+    ("in", "SYMMETRY_INPUT", COLS[0], 103, "SYM"),
+    ("in", "AM_INPUT", COLS[1], 103, "AM"),
+    ("in", "EXT_FM_INPUT", COLS[2], 103, "EXT FM"),
+    ("in", "SYNC_INPUT", COLS[3], 103, "SYNC"),
+    ("in", "FEEDBACK_INPUT", COLS[0], 117, "FB"),
+    ("in", "CHAOS_INPUT", COLS[1], 117, "CHAOS"),
     ("out", "MOD_OUTPUT", COLS[2], 117, "MOD"),
     ("out", "PRIMARY_OUTPUT", COLS[3], 117, "OUT"),
 ]
@@ -81,15 +87,14 @@ def svg():
         f'<rect width="{W:.2f}" height="{H}" fill="{BG}"/>',
         f'<rect x="0" y="0" width="{W:.2f}" height="1.2" fill="{ACCENT}"/>',
         f'<rect x="0" y="{H - 1.2}" width="{W:.2f}" height="1.2" fill="{ACCENT}"/>',
-        text_path("COMPLEX OSC", W / 2, 10.5, size=4.2, color=FG),
+        text_path("COMPLEX OSC", W / 2, 10.0, size=4.2, color=FG),
         # Output well
-        f'<rect x="{COLS[2] - 7.5:.2f}" y="106.5" width="{COLS[3] - COLS[2] + 15:.2f}" height="17" rx="1.6" fill="{OUTBOX}"/>',
+        f'<rect x="{COLS[2] - 7.5:.2f}" y="109.2" width="{COLS[3] - COLS[2] + 15:.2f}" height="15.6" rx="1.6" fill="{OUTBOX}"/>',
         # Section rules
-        f'<line x1="4" y1="74.5" x2="{W - 4:.2f}" y2="74.5" stroke="{OUTBOX}" stroke-width="0.4"/>',
+        f'<line x1="4" y1="80" x2="{W - 4:.2f}" y2="80" stroke="{OUTBOX}" stroke-width="0.4"/>',
     ]
     for kind, _, x, y, label in CONTROLS:
         out.append(text_path(label, x, y + LABEL_DY[kind], size=2.0, color=ACCENT if kind == "out" else FG))
-    out.append(text_path("UP = RATIO", COLS[0], 73.0, size=1.5))
     out.append("</svg>")
     return "\n".join(out)
 
