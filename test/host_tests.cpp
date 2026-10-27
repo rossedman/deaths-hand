@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "../dsp/ComplexOsc.hpp"
+#include "../dsp/Panel.hpp"
 #include "../dsp/Pickup.hpp"
 
 using namespace cosc;
@@ -449,21 +450,126 @@ static void testUnison() {
     CHECK(stepAfter < 1.5f * stepBefore, "adding voices clicked (%.3f V vs %.3f V)", stepAfter, stepBefore);
 }
 
-static void testLayers() {
-    std::printf("patch.Init layers: shift, unison, frozen ratio lock\n");
-    LayerSelect l;
-    l.update(false, true);
-    CHECK(l.layer == kNormal && l.ratioLock, "toggle up, no button: normal layer, locked");
-    CHECK(l.update(true, true) && l.layer == kShift, "button + toggle up: shift layer");
-    CHECK(l.update(true, false) && l.layer == kUnison, "flip toggle down while holding: unison layer");
-    CHECK(l.ratioLock, "ratio lock must not change while the button is held");
-    CHECK(l.update(true, true) && l.layer == kShift && l.ratioLock, "flip back up: shift layer again");
-    CHECK(l.update(false, true) && l.layer == kNormal && l.ratioLock, "release with toggle up: still locked");
-    l.update(false, false);
-    CHECK(l.layer == kNormal && !l.ratioLock, "toggle down, no button: free mode");
-    CHECK(l.update(true, false) && l.layer == kUnison && !l.ratioLock, "free mode + button: unison layer");
-    CHECK(!l.update(true, false), "no change, no layer switch");
-    std::printf("  ok\n");
+// Fraction of energy that is NOT in the fundamental (Hann main lobe, 1 Hz bins).
+static double offFundamental(const std::vector<float>& x, double f0) {
+    double fund = 0.0;
+    for (int d = -1; d <= 1; ++d) fund += std::pow(10.0, binDb(x, f0 + d) / 10.0);
+    return std::max(0.0, 1.0 - fund);
+}
+
+// Spectral centroid in Hz (Hann-windowed DFT magnitude, 4 Hz bins).
+static double centroidHz(const std::vector<float>& x) {
+    const size_t n   = 12000; // 0.25 s
+    double       num = 0.0, den = 0.0;
+    for (int k = 1; k < static_cast<int>(n / 2); k += 2) {
+        double re = 0.0, im = 0.0, w = 2.0 * 3.14159265358979 * k / n;
+        for (size_t i = 0; i < n; ++i) {
+            double v = x[i] * (0.5 - 0.5 * std::cos(2.0 * 3.14159265358979 * i / n));
+            re += v * std::cos(w * i);
+            im -= v * std::sin(w * i);
+        }
+        double mag = std::sqrt(re * re + im * im);
+        num += mag * k * kFs / n;
+        den += mag;
+    }
+    return num / den;
+}
+
+static std::vector<float> renderPanel(const PanelState& ps, int seconds = 1) { return renderTone(panelToParams(ps), seconds); }
+
+static void testMacros() {
+    std::printf("macros: FLESH, MALICE, LEGION\n");
+
+    // All three at zero leave every parameter they own at its plain default.
+    Params plain, p;
+    applyMacros(MacroValues{}, p);
+    CHECK(p.fmIndex == plain.fmIndex && p.timbre == plain.timbre && p.symmetry == plain.symmetry && p.timbreMod == plain.timbreMod &&
+              p.feedback == plain.feedback && p.chaos == plain.chaos && p.sub == plain.sub && p.voices == plain.voices && p.spread == plain.spread &&
+              p.drift == plain.drift,
+          "macros at zero must be the plain engine");
+
+    // No jumps: across 1000 steps no owned parameter moves more than 0.012 (voices: 0.08).
+    float worst = 0.f;
+    for (int mi = 0; mi < 3; ++mi) {
+        Params prev;
+        for (int i = 0; i <= 1000; ++i) {
+            MacroValues m;
+            (mi == 0 ? m.flesh : mi == 1 ? m.malice : m.legion) = static_cast<float>(i) / 1000.f;
+            Params q;
+            applyMacros(m, q);
+            if (i > 0) {
+                for (float d :
+                     {q.fmIndex - prev.fmIndex, q.timbre - prev.timbre, q.symmetry - prev.symmetry, q.timbreMod - prev.timbreMod, q.feedback - prev.feedback,
+                      q.chaos - prev.chaos, q.sub - prev.sub, q.spread - prev.spread, q.drift - prev.drift, (q.voices - prev.voices) * 0.15f})
+                    worst = std::max(worst, std::fabs(d));
+            }
+            prev = q;
+        }
+    }
+    std::printf("  largest parameter step per 0.001 of knob: %.4f\n", worst);
+    CHECK(worst < 0.012f, "a macro curve jumps (%.4f)", worst);
+
+    PanelState ps;
+    ps.pitch = (std::log2(220.f / kC4Hz) + 3.f) / 6.f; // 220 Hz: exact 1 Hz bins
+
+    // FLESH: brightness climbs the whole way.
+    std::printf("  FLESH  centroid:");
+    double first = 0.0, prevC = 0.0, last = 0.0;
+    bool   rising = true;
+    for (int i = 0; i <= 10; ++i) {
+        PanelState f = ps;
+        f.flesh      = i / 10.f;
+        double c     = centroidHz(renderPanel(f));
+        std::printf(" %.0f", c);
+        if (i == 0) first = c;
+        if (i > 0 && c < prevC * 0.97) rising = false;
+        prevC = last = c;
+    }
+    std::printf(" Hz\n");
+    CHECK(rising, "FLESH brightness should rise steadily");
+    CHECK(last > 5.0 * first, "FLESH at full should be far brighter (%.0f vs %.0f Hz)", last, first);
+
+    // MALICE: the lower half is feedback only (harmonic: sine -> saw), the edge
+    // into chaos is spread over roughly 0.55..0.8, and the top is possessed.
+    std::printf("  MALICE off-fundamental / inharmonic:");
+    double prevM = -1.0, inhHalf = 0.0, inhTop = 0.0;
+    rising = true;
+    for (int i = 0; i <= 10; ++i) {
+        PanelState mm = ps;
+        mm.malice     = i / 10.f;
+        auto   y      = renderPanel(mm);
+        double r = offFundamental(y, 220.0), inh = nonHarmonicRatio(y, 220.0);
+        std::printf(" %.2f/%.2f", r, inh);
+        if (r < prevM - 0.05) rising = false;
+        if (i == 5) inhHalf = inh;
+        if (i == 9) inhTop = inh;
+        prevM = r;
+    }
+    std::printf("\n");
+    CHECK(rising, "MALICE should move energy off the fundamental steadily");
+    CHECK(inhHalf < 0.01, "MALICE at half should still be harmonic (%.3f)", inhHalf);
+    CHECK(inhTop > 0.9, "MALICE near full should be possessed (%.3f)", inhTop);
+
+    // LEGION: the sub arrives first, then the stack beats harder and harder.
+    PanelState lg      = ps;
+    lg.legion          = 0.25f;
+    const double subDb = binDb(renderPanel(lg), 110.0);
+    std::printf("  LEGION 0.25: sub %.1f dB\n", subDb);
+    CHECK(subDb > -12.0, "LEGION should bring the sub in first (%.1f dB)", subDb);
+    std::printf("  LEGION swing:");
+    double prevS = 0.0, lastS = 0.0;
+    rising = true;
+    for (int i = 4; i <= 10; ++i) {
+        PanelState l = ps;
+        l.legion     = i / 10.f;
+        double sw    = envelopeSwing(renderPanel(l, 4));
+        std::printf(" %.1fx", sw);
+        if (sw < prevS * 0.85) rising = false;
+        prevS = lastS = sw;
+    }
+    std::printf("\n");
+    CHECK(rising, "LEGION should thicken steadily");
+    CHECK(lastS > 3.0, "LEGION at full should beat hard (%.1fx)", lastS);
 }
 
 static void testPickup() {
@@ -596,89 +702,83 @@ static void renderAll(const std::string& dir) {
 }
 
 // ---------------------------------------------------------------- examples
-// Six presets, each written as patch.Init knob positions (0..1 = 7 o'clock..5 o'clock)
-// so they can be dialed in by hand. See README "Six evil patches".
+// Six patches written as patch.Init knob positions (0..1 = 7 o'clock..5 o'clock)
+// and rendered through the same panel mapping the firmware uses, so they can be
+// dialed in by hand. See README "Six evil patches".
 struct Example {
-    const char*                         file;
-    const char*                         name;
-    std::function<void(float, Params&)> automate;
+    const char*                             file;
+    const char*                             name;
+    std::function<void(float, PanelState&)> automate;
 };
 
 static void renderExamples(const std::string& dir) {
     std::printf("examples\n");
-    // Every value below is reachable on patch.Init: routing values match the
-    // button presets exactly, and motion is a knob turn or a patched CV.
     const Example examples[] = {
         {"ex1_reactor_hum.wav", "Reactor hum",
-         [](float t, Params& p) { // low drone; rock shift-K1 to make the feedback breathe
-             p.pitchV   = -2.f;
-             p.ratio    = 0.5f;
-             p.fmIndex  = 0.12f;
-             p.timbre   = 0.35f;
-             p.feedback = 0.55f + 0.25f * std::sin(t * 6.283f * 1.5f);
-             p.symmetry = 0.3f; // routing 0: FM only
+         [](float t, PanelState& s) {  // low drone; rock MALICE to make the feedback breathe
+             s.pitch    = 1.f / 6.f;   // C2
+             s.ratio    = 1.5f / 11.f; // 1:2
+             s.flesh    = 0.35f;
+             s.malice   = 0.3f + 0.2f * std::sin(t * 6.283f * 1.5f);
+             s.legion   = 0.12f;
+             s.symmetry = 0.65f;
          }},
         {"ex2_lorenz_growl.wav", "Lorenz growl",
-         [](float t, Params& p) { // chaotic modulator in audio range: an engine that won't idle
-             p.pitchV    = -1.5f;
-             p.ratioLock = false;
-             p.modPitchV = -1.2f;
-             p.modShape  = ModShape::Lorenz;
-             p.fmIndex   = 0.3f + 0.2f * t;
-             p.timbre    = 0.4f;
-             p.timbreMod = 0.6f; // routing 1: FM + timbre mod
+         [](float t, PanelState& s) { // chaotic modulator in audio range: an engine that won't idle
+             s.pitch     = 0.25f;
+             s.ratioLock = false;
+             s.ratio     = 0.618f; // free modulator, about 113 Hz
+             s.shape     = 0.9f;   // Lorenz
+             s.flesh     = 0.4f + 0.2f * t;
+             s.routing   = 1;
          }},
         {"ex3_chaos_bells.wav", "Chaos bells",
-         [](float t, Params& p) { // sequencer -> CV_5, decaying envelope -> CV_6, chaos rises
+         [](float t, PanelState& s) { // sequencer -> CV_5, decaying envelope -> CV_6 (FLESH), MALICE rises
              static const float notes[] = {0, 7, 3, 10, 5, 12, 1, 8};
-             float              step    = t * 16.f;
-             int                i       = static_cast<int>(step) % 8;
-             float              env     = std::exp(-5.f * (step - std::floor(step)));
-             p.pitchV                   = notes[i] / 12.f;
-             p.ratio                    = 3.f;
-             p.fmIndex                  = 0.5f * env;
-             p.chaos                    = 0.2f + 0.6f * t;
-             p.timbre                   = 0.1f;
-             p.amDepth                  = 0.5f; // routing 2: FM + AM
+             const float        step    = t * 16.f;
+             const float        env     = std::exp(-5.f * (step - std::floor(step)));
+             s.pitch                    = 0.5f;
+             s.pitchCv                  = notes[static_cast<int>(step) % 8] / 12.f;
+             s.ratio                    = 5.5f / 11.f; // 1:3
+             s.flesh                    = 0.05f;
+             s.fleshCv                  = 2.5f * env;
+             s.malice                   = 0.45f + 0.4f * t;
+             s.routing                  = 2;
          }},
         {"ex4_feedback_scream.wav", "Feedback scream",
-         [](float t, Params& p) { // pitch dives while feedback pushes past saw into noise
-             p.pitchV   = 2.5f - 4.f * t;
-             p.feedback = 0.6f + 0.4f * t;
-             p.fmIndex  = 0.2f;
-             p.ratio    = 1.5f;
-             p.timbre   = 0.6f;
-             p.symmetry = -0.4f; // routing 0
+         [](float t, PanelState& s) { // pitch dives while MALICE pushes past saw into noise
+             s.pitch    = 0.917f - 0.667f * t;
+             s.ratio    = 3.5f / 11.f; // 1:1.5
+             s.flesh    = 0.6f;
+             s.malice   = 0.5f + 0.5f * t;
+             s.symmetry = 0.3f;
          }},
         {"ex5_possession.wav", "Possession",
-         [](float t, Params& p) { // everything on; flip the modulator to Lorenz halfway
-             p.pitchV    = -1.f;
-             p.ratio     = 2.f;
-             p.fmIndex   = 0.45f;
-             p.feedback  = 0.5f;
-             p.chaos     = 0.7f * t;
-             p.timbre    = 0.3f + 0.5f * t;
-             p.symmetry  = 0.5f;
-             p.amDepth   = 1.f;
-             p.timbreMod = 0.3f; // routing 3: FM + ring
-             p.modShape  = (t < 0.5f) ? ModShape::Square : ModShape::Lorenz;
+         [](float t, PanelState& s) { // everything rising; the modulator turns to Lorenz halfway
+             s.pitch    = 1.f / 3.f;
+             s.ratio    = 4.5f / 11.f;            // 1:2
+             s.shape    = t < 0.5f ? 0.7f : 0.9f; // square, then Lorenz
+             s.flesh    = 0.45f + 0.45f * t;
+             s.malice   = 0.25f + 0.6f * t;
+             s.legion   = 0.3f;
+             s.symmetry = 0.75f;
+             s.routing  = 3;
          }},
         {"ex6_legion.wav", "Legion",
-         [](float t, Params& p) { // four drifting voices, a sub rising underneath, the fold opening
-             p.pitchV   = -2.f;
-             p.ratio    = 1.f;
-             p.fmIndex  = 0.15f;
-             p.feedback = 0.2f;
-             p.timbre   = 0.25f + 0.35f * t;
-             p.voices   = 4;
-             p.spread   = 0.4f;
-             p.drift    = 0.5f;
-             p.sub      = 0.7f * t; // routing 0
+         [](float t, PanelState& s) { // one voice becomes a swarm while the fold opens
+             s.pitch  = 1.f / 6.f;
+             s.flesh  = 0.3f + 0.3f * t;
+             s.malice = 0.2f;
+             s.legion = 0.15f + 0.85f * t;
          }},
     };
     for (const Example& e : examples) {
         std::printf("  %s\n", e.name);
-        render<4>(dir + "/" + e.file, 10.f, e.automate);
+        render<4>(dir + "/" + e.file, 10.f, [&](float t, Params& p) {
+            PanelState s;
+            e.automate(t, s);
+            p = panelToParams(s);
+        });
     }
 }
 
@@ -692,7 +792,7 @@ int main(int argc, char** argv) {
     testLorenz();
     testChaosLongRun();
     testUnison();
-    testLayers();
+    testMacros();
     testPickup();
     std::printf("benchmark (host CPU, per output sample)\n");
     std::printf("  OS=1: %6.1f ns   OS=2: %6.1f ns   OS=4: %6.1f ns\n", benchNsPerSample<1>(), benchNsPerSample<2>(), benchNsPerSample<4>());

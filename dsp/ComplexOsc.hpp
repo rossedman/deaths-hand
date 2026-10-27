@@ -36,7 +36,7 @@ struct Params {
     float    feedback  = 0.f;  // 0..1 primary self-feedback (sine -> saw-ish -> noise)
     float    chaos     = 0.f;  // 0..1 primary -> modulator cross-FM
     ModShape modShape  = ModShape::Sine;
-    int      voices    = 1;   // 1..4 unison voices in the primary stack
+    float    voices    = 1.f; // 1..4 unison voices; fractional fades the next one in (2.5 = third at half)
     float    spread    = 0.f; // 0..1 detune between voices (squared: fine near zero)
     float    drift     = 0.f; // 0..1 slow chaotic wander of each extra voice's tuning
     float    sub       = 0.f; // 0..1 level of a sine one octave below, into the folder
@@ -100,7 +100,8 @@ class ComplexOsc {
         smSpread_.reset(p_.spread);
         smDrift_.reset(p_.drift);
         smSub_.reset(p_.sub);
-        for (int k = 1; k < kMaxVoices; ++k) gain_[k] = k < p_.voices ? 1.f : 0.f;
+        const float nVoices = clampf(p_.voices, 1.f, static_cast<float>(kMaxVoices));
+        for (int k = 1; k < kMaxVoices; ++k) gain_[k] = clampf(nVoices - static_cast<float>(k), 0.f, 1.f);
     }
 
     // Hard sync: restart both oscillators.
@@ -132,11 +133,11 @@ class ComplexOsc {
         // Unison stack: per-voice gains glide so changing the voice count never clicks.
         // An inactive voice shadows voice 0, so it starts in phase when it fades in
         // and, with no spread or drift, adds nothing but itself.
-        const int nVoices = p_.voices < 1 ? 1 : (p_.voices > kMaxVoices ? kMaxVoices : p_.voices);
-        float     gainSum = 1.f;
-        bool      stacked = false;
+        const float nVoices = clampf(p_.voices, 1.f, static_cast<float>(kMaxVoices));
+        float       gainSum = 1.f;
+        bool        stacked = false;
         for (int k = 1; k < kMaxVoices; ++k) {
-            const float target = k < nVoices ? 1.f : 0.f;
+            const float target = clampf(nVoices - static_cast<float>(k), 0.f, 1.f);
             gain_[k] += gainCoeff_ * (target - gain_[k]);
             if (std::fabs(target - gain_[k]) < 1e-4f) gain_[k] = target;
             gainSum += gain_[k];

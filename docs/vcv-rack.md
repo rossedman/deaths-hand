@@ -1,16 +1,15 @@
 # VCV Rack
 
-The VCV Rack 2 plugin runs the same DSP core as the firmware, with every parameter on its own knob instead of a shift layer, plus CV inputs and attenuverters for FM index, timbre, feedback and chaos.
+The VCV Rack 2 plugin mirrors the patch.Init. Pitch and the three [character macros](panel.md#the-macros) sit on top, and the settings the hardware keeps on its shift layer get knobs of their own. Knobs and CVs go through the same `cosc::panelToParams` as the firmware, so a patch translates one-to-one.
 
 See [Reading the panel](panel.md) for what each sigil means, and [Getting started](getting-started.md#vcv-rack) to install it.
 
 ## Differences from the patch.Init
 
-- No shift layer: feedback, chaos, symmetry and the modulator shape each have a knob.
+- No shift layer: ratio, modulator shape, symmetry trim and fine tune each have a knob.
+- Routing is a four-position knob (the crossed ring) instead of a button tap, and its jack takes a trigger to step it, like the patch.Init's Gate 2.
 - The ratio lock is a switch (the key sigil). Up locks the modulator to the ratio steps; down frees it.
-- AM → ring mod is a continuous knob (the crossed ring) rather than a routing step, and the serpent knob sets how much the modulator drives the timbre.
-- Separate CV inputs for symmetry, AM, feedback and chaos, and a dedicated MOD V/OCT input.
-- The unison stack (voices, spread, drift, sub) is in the module's right-click menu, under **Unison**, because the 16 HP panel is full. It has no CV inputs yet.
+- The symmetry CV has its own jack instead of sharing the patch.Init's audio IN R.
 
 ## Building
 

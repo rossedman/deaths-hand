@@ -38,6 +38,7 @@ targets="
 banner 1280 400
 social-preview 1280 640
 how-it-works 1280 720
+panel 560 885
 "
 
 echo "$targets" | while read -r name w h; do

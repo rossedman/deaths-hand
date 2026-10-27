@@ -27,6 +27,8 @@ The firmware, the plugin and the host tests all include `dsp/` unchanged, so wha
 
 **Chaos** feeds the primary's output into the modulator's frequency, clamped to ±20 kHz so heavy settings can't push it far past the band limit.
 
+**Macros.** FLESH, MALICE and LEGION are piecewise-linear curves in `dsp/Macros.hpp`, applied by `dsp/Panel.hpp`: the one mapping from panel to engine that the firmware, the VCV plugin and the patch renders share. MALICE brings in a little FM of its own because chaos only reaches the primary through FM; without it, MALICE alone would stop at a saw. Chaos is a tipping point, so its curve is stretched to put the edge across 0.55–0.8 of the knob instead of one 5% step.
+
 **Unison** stacks up to four primary voices before the wavefolder, so the fold intermodulates them. Every voice gets the same through-zero FM and its own self-feedback history. An idle voice shadows voice 0, so it fades in exactly in phase and only spread or drift pull it away; with no spread, four voices sound like one. Detuned sines this close look like one sine with a beating amplitude A, so the folder's DC becomes `sin(a·b)·J0(a·A)`, with A tracked per sample from the voices' phasors. Without that, the beat leaks through the DC blocker as a slow wobble (0.26 V against 0.05 V in the host tests). A sub one octave down adds its own J0 term.
 
 **Lorenz** is integrated with a midpoint (RK2) step capped at 0.02, with a reset guard, so no setting can make it run away or produce NaN.

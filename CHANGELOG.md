@@ -11,6 +11,7 @@ The first public release. VCV Rack requires plugin versions to start with the Ra
 - A through-zero FM complex oscillator with a wavefolder (timbre and symmetry), AM and ring mod, self-feedback, chaos cross-FM and a Lorenz-attractor modulator, all 4x oversampled.
 - patch.Init firmware with a shift layer and soft takeover, and a VCV Rack 2 plugin with a generated sigil panel, both built from the same DSP core.
 - Host tests for pitch tracking, stability, aliasing, feedback, chaos and long worst-case runs.
-- A unison stack: up to four detuned primary voices and a sub one octave down, summed into the wavefolder, with spread, Lorenz drift and an envelope-aware DC correction. On the patch.Init it is a third knob layer (hold the button, toggle down); in VCV Rack it is in the context menu.
-- A sixth patch, Legion.
+- Three character macros on the front panel, each with its own CV jack: FLESH (FM, fold, asymmetry), MALICE (feedback, chaos) and LEGION (sub, voices, drift). Ratio, modulator shape, symmetry and fine tune move to the patch.Init's shift layer, and the VCV panel mirrors the hardware knob for knob.
+- A unison stack: up to four detuned primary voices and a sub one octave down, summed into the wavefolder, with spread, Lorenz drift and an envelope-aware DC correction. LEGION plays it.
+- A sixth patch, Legion. All six are written as knob positions and rendered through the firmware's own panel mapping.
 - Open-source project files, CI for every target, signed releases, branding and a docs site.

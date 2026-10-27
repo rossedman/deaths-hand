@@ -3,13 +3,11 @@
 //
 // Panel map (see README for the full table)
 //                           normal                        | hold button (shift)
-//   CV_1 knob + CV_5 jack : pitch (jack = 1V/oct)         | FEEDBACK
-//   CV_2 knob + CV_8 jack : ratio / modulator pitch        | CHAOS (cross-FM)
-//   CV_3 knob + CV_6 jack : FM index                       | SYMMETRY (noon = 0)
-//   CV_4 knob + CV_7 jack : timbre (wavefold)              | MOD SHAPE (5 zones)
-//   hold button + toggle DOWN: third layer, the unison stack
-//   CV_1 VOICES (1-4)  CV_2 SPREAD (detune)  CV_3 DRIFT  CV_4 SUB (octave down)
-//   (jacks always drive the normal-layer parameter)
+//   CV_1 knob + CV_5 jack : pitch (jack = 1V/oct)         | RATIO (toggle up) / MOD PITCH (down)
+//   CV_2 knob + CV_6 jack : FLESH  (FM, fold, asymmetry)  | MOD SHAPE (5 zones, last = Lorenz)
+//   CV_3 knob + CV_7 jack : MALICE (feedback, chaos)      | SYMMETRY trim (noon = 0)
+//   CV_4 knob + CV_8 jack : LEGION (sub, voices, drift)   | FINE tune (noon = 0, +-1 semitone)
+//   (jacks always drive the front-panel parameter)
 //   IN_L        : external FM (audio rate)    IN_R : symmetry CV (+-5 V)
 //   GATE_IN_1   : hard sync                   GATE_IN_2 : next routing mode
 //   Button tap  : next routing mode           Toggle : up = ratio lock, down = free
@@ -19,6 +17,7 @@
 #include "util/CpuLoadMeter.h"
 
 #include "../dsp/ComplexOsc.hpp"
+#include "../dsp/Panel.hpp"
 #include "../dsp/Pickup.hpp"
 
 using namespace daisy;
@@ -48,24 +47,10 @@ Switch       button, toggle;
 cosc::ComplexOsc<4> osc;
 CpuLoadMeter        cpu; // build with CPU_METER=1 to print load over USB serial
 
-// Routing presets cycled by a button tap / gate 2.
-struct Routing {
-    float amDepth;
-    float timbreMod;
-};
-constexpr Routing kRoutings[] = {
-    {0.f, 0.f},  // 0: FM only
-    {0.f, 0.6f}, // 1: FM + modulator sweeps the folder
-    {0.5f, 0.f}, // 2: FM + classic AM
-    {1.f, 0.3f}, // 3: FM + ring mod + a little timbre mod
-};
-constexpr int kNumRoutings = sizeof(kRoutings) / sizeof(kRoutings[0]);
+using cosc::kNumRoutings;
 
-using cosc::kNormal;
-using cosc::kShift;
-using cosc::kUnison;
-cosc::PickupKnob  knobs[cosc::kNumLayers][4]; // [layer][knob]
-cosc::LayerSelect layers;
+enum Layer { kNormal = 0, kShift = 1 };
+cosc::PickupKnob knobs[2][4]; // [layer][knob]
 
 int      routing      = 0;
 bool     gate2Was     = false;
@@ -81,22 +66,21 @@ void handleButtonAndLayers() {
     toggle.Debounce();
 
     const bool shift = button.Pressed();
-    if (shift && !shiftWas) {
-        pressStartMs = System::GetNow();
-        shiftUsed    = false;
-    } else if (!shift && shiftWas && !shiftUsed && System::GetNow() - pressStartMs < kTapMs) {
-        routing = (routing + 1) % kNumRoutings; // it was a tap
+    if (shift != shiftWas) {
+        const int active = shift ? kShift : kNormal;
+        for (int i = 0; i < 4; ++i) knobs[active][i].lock(rawKnob(i));
+        if (shift) {
+            pressStartMs = System::GetNow();
+            shiftUsed    = false;
+        } else if (!shiftUsed && System::GetNow() - pressStartMs < kTapMs) {
+            routing = (routing + 1) % kNumRoutings; // it was a tap
+        }
+        shiftWas = shift;
     }
 
-    // Flipping the toggle while holding switches shift <-> unison; that's not a tap.
-    if (layers.update(shift, toggle.Pressed())) {
-        for (int i = 0; i < 4; ++i) knobs[layers.layer][i].lock(rawKnob(i));
-        if (shift && shiftWas) shiftUsed = true;
-    }
-    shiftWas = shift;
-
+    const int active = shift ? kShift : kNormal;
     for (int i = 0; i < 4; ++i)
-        if (knobs[layers.layer][i].update(rawKnob(i)) && shift) shiftUsed = true;
+        if (knobs[active][i].update(rawKnob(i)) && shift) shiftUsed = true;
 }
 
 void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, size_t size) {
@@ -112,39 +96,25 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, s
 
     const cosc::PickupKnob* n = knobs[kNormal];
     const cosc::PickupKnob* s = knobs[kShift];
-    const cosc::PickupKnob* u = knobs[kUnison];
 
-    cosc::Params p;
-    const float  pitchCv = cvVolts(CV_5) * kPitchCvScale + kPitchCvOffset;
-    p.pitchV             = (n[0].value * 6.f - 3.f) + pitchCv; // knob spans 6 octaves around C4
-
-    p.ratioLock = layers.ratioLock;
-    if (p.ratioLock) {
-        p.ratio = cosc::quantizeRatio(n[1].value + cvVolts(CV_8) * 0.1f);
-    } else {
-        // -8 V .. +3 V: about 1 Hz (LFO) up to C7. CV_8 is 1V/oct on top.
-        p.modPitchV = (n[1].value * 11.f - 8.f) + cvVolts(CV_8);
-    }
-    p.fmIndex = n[2].value + cvVolts(CV_6) * 0.2f;
-    p.timbre  = n[3].value + cvVolts(CV_7) * 0.2f;
-
-    const float inSign = kInvertAudio ? -1.f : 1.f;
-    p.feedback         = s[0].value;
-    p.chaos            = s[1].value;
-    // Shift knob 3 centred = no bias; IN_R adds +-1 per +-5 V.
-    p.symmetry = (s[2].value * 2.f - 1.f) + in[1][0] * inSign * kAudioFullScaleV * 0.2f;
-    p.modShape = static_cast<cosc::ModShape>(static_cast<int>(cosc::clampf(s[3].value, 0.f, 0.999f) * static_cast<float>(cosc::ModShape::Count)));
-
-    // Unison layer: voices in 4 zones, then spread, drift and sub.
-    p.voices = 1 + static_cast<int>(cosc::clampf(u[0].value, 0.f, 0.999f) * 4.f);
-    p.spread = u[1].value;
-    p.drift  = u[2].value;
-    p.sub    = u[3].value;
-
-    const Routing& r = kRoutings[routing];
-    p.amDepth        = r.amDepth;
-    p.timbreMod      = r.timbreMod;
-
+    cosc::PanelState ps;
+    ps.pitch             = n[0].value;
+    ps.flesh             = n[1].value;
+    ps.malice            = n[2].value;
+    ps.legion            = n[3].value;
+    ps.ratio             = s[0].value;
+    ps.shape             = s[1].value;
+    ps.symmetry          = s[2].value;
+    ps.fine              = s[3].value;
+    ps.ratioLock         = toggle.Pressed();
+    ps.routing           = routing;
+    ps.pitchCv           = cvVolts(CV_5) * kPitchCvScale + kPitchCvOffset;
+    ps.fleshCv           = cvVolts(CV_6);
+    ps.maliceCv          = cvVolts(CV_7);
+    ps.legionCv          = cvVolts(CV_8);
+    const float inSign   = kInvertAudio ? -1.f : 1.f;
+    ps.symmetryCv        = in[1][0] * inSign * kAudioFullScaleV; // IN_R, volts
+    const cosc::Params p = cosc::panelToParams(ps);
     osc.setParams(p);
 
     const float outScale = (kInvertAudio ? -1.f : 1.f) / kAudioFullScaleV;
@@ -158,13 +128,10 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, s
         lastMod   = mod;
     }
 
-    // CV outs are 0..5 V. Modulator as unipolar CV. LED: full on the shift
-    // layer, blinking on the unison layer, otherwise routing brightness.
+    // CV outs are 0..5 V. Modulator as unipolar CV. LED: full while shift is
+    // held, otherwise its brightness shows the routing mode.
     hw.WriteCvOut(CV_OUT_1, cosc::clampf(lastMod * 0.5f + 2.5f, 0.f, 5.f));
-    float led = 1.25f * static_cast<float>(routing) + 0.3f;
-    if (layers.layer == kShift) led = 5.f;
-    if (layers.layer == kUnison) led = (System::GetNow() / 125) % 2 ? 5.f : 0.f;
-    hw.WriteCvOut(CV_OUT_2, led);
+    hw.WriteCvOut(CV_OUT_2, shiftWas ? 5.f : 1.25f * static_cast<float>(routing) + 0.3f);
     cpu.OnBlockEnd();
 }
 
@@ -178,17 +145,18 @@ int main() {
     button.Init(DaisyPatchSM::B7);
     toggle.Init(DaisyPatchSM::B8);
 
-    // Normal layer starts where the knobs physically are. Shift layer starts at
-    // sane defaults (no feedback, no chaos, centred symmetry, sine) and picks up
+    // Front knobs start where they physically are. Shift settings start at sane
+    // defaults (ratio 1:1 or a slow LFO, sine, no symmetry, in tune) and pick up
     // the first time you hold the button and sweep a knob through that value.
     hw.ProcessAllControls();
     for (int i = 0; i < 4; ++i) {
         knobs[kNormal][i].value = rawKnob(i);
         knobs[kNormal][i].last  = rawKnob(i);
     }
-    // The unison layer starts at one voice, no spread, drift or sub: the plain engine.
+    knobs[kShift][0].value = cosc::PanelState{}.ratio; // the 1:1 step
     knobs[kShift][2].value = 0.5f;
-    for (int i = 0; i < 4; ++i) knobs[kShift][i].fresh = knobs[kUnison][i].fresh = true;
+    knobs[kShift][3].value = 0.5f;
+    for (int i = 0; i < 4; ++i) knobs[kShift][i].fresh = true;
 
     osc.init(hw.AudioSampleRate());
     cpu.Init(hw.AudioSampleRate(), hw.AudioBlockSize());

@@ -53,7 +53,7 @@
       <li><b>0.09¢</b><span>worst 1V/oct error, −3 V to +5 V</span></li>
       <li><b>−84 dB</b><span>alias energy, 4× oversampled</span></li>
       <li><b>60 s</b><span>of worst-case evil, still finite</span></li>
-      <li><b>105 KB</b><span>of the patch.Init's 128 KB flash</span></li>
+      <li><b>106 KB</b><span>of the patch.Init's 128 KB flash</span></li>
     </ul>
   </section>
 
@@ -90,7 +90,38 @@
     </div>
   </section>
 
-  <section class="lp-section lp-section--alt" id="the-panel">
+  <section class="lp-section lp-section--alt" id="the-macros">
+    <div class="lp-wrap">
+      <p class="lp-eyebrow">The macros</p>
+      <h2>Three knobs.<br><span>Three sins.</span></h2>
+      <p class="lp-lede lp-lede--center">Each macro sweeps several parameters along its own curve, so one knob, or one CV, tells one story. The host tests hold each to it.</p>
+      <div class="lp-pillars">
+        <article class="lp-pillar" style="--accent: var(--warn)">
+          <h3>Flesh</h3><div class="when">FM, fold, asymmetry</div>
+          <p>Sidebands first, then the fold opens from glassy to snarling, then it tips asymmetric and starts to move.</p>
+          <pre><code>centroid, FLESH 0 → 1 (Hz)
+220 314 487 750 1722 2402
+3377 4245 5478 6361 6809</code></pre>
+        </article>
+        <article class="lp-pillar" style="--accent: var(--brand)">
+          <h3>Malice</h3><div class="when">feedback, then chaos</div>
+          <p>Harmonic to halfway: sine to saw. The edge into chaos runs from about 0.55 to 0.8. Past it, possession.</p>
+          <pre><code>inharmonic share, MALICE
+0.5  0.00   0.7  0.05
+0.8  0.97   0.9  1.00</code></pre>
+        </article>
+        <article class="lp-pillar" style="--accent: var(--info)">
+          <h3>Legion</h3><div class="when">sub, voices, drift</div>
+          <p>A sub arrives first, then detuned voices fade in one by one, then a Lorenz attractor pulls them apart.</p>
+          <pre><code>beating, LEGION 0.4 → 1
+2.8x 3.4x 3.7x 4.2x
+4.0x 4.0x 4.8x</code></pre>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-section" id="the-panel">
     <div class="lp-wrap lp-split">
       <div class="lp-panelart">
         <img src="{{ 'assets/panel.png' | url }}" width="560" height="885" alt="The Death's Hand panel: sixteen controls marked with sigils over a faint summoning circle, rune columns down both edges, and the two outputs on a red altar." loading="lazy">
@@ -98,23 +129,23 @@
       <div>
         <p class="lp-eyebrow">The panel</p>
         <h2>No words.<br><span>Only sigils.</span></h2>
-        <p class="lp-lede">Each knob's sigil repeats on the jack and the attenuverter that modulate it, so the panel reads in columns. Bone rings are inputs; red rings are outputs, and they sit on the altar.</p>
+        <p class="lp-lede">The top row is the voice: pitch and three character macros. Each sigil repeats on the jack that drives it, so the panel reads in columns. Bone rings are inputs; red rings are outputs, and they sit on the altar.</p>
         <ul class="lp-sigils">
           <li><b>Eye</b><span>pitch</span></li>
+          <li><b>Zigzag</b><span>FLESH</span></li>
+          <li><b>Eight-arrow star</b><span>MALICE</span></li>
+          <li><b>Four rings</b><span>LEGION</span></li>
           <li><b>Vesica</b><span>ratio, modulator pitch</span></li>
-          <li><b>Trident</b><span>FM index</span></li>
-          <li><b>Zigzag</b><span>timbre (fold)</span></li>
+          <li><b>Triangle</b><span>modulator shape</span></li>
           <li><b>Hourglass</b><span>symmetry</span></li>
-          <li><b>Crossed ring</b><span>AM → ring mod</span></li>
-          <li><b>Ouroboros</b><span>self-feedback</span></li>
-          <li><b>Eight-arrow star</b><span>chaos</span></li>
+          <li><b>Crossed ring</b><span>routing</span></li>
         </ul>
         <p class="lp-center" style="text-align:left"><a class="lp-link" href="{{ 'panel/' | url }}">The full decoder {% include ".icons/material/arrow-right.svg" %}</a></p>
       </div>
     </div>
   </section>
 
-  <section class="lp-section">
+  <section class="lp-section lp-section--alt">
     <div class="lp-wrap">
       <p class="lp-eyebrow">Three vessels</p>
       <h2>One core.<br><span>Three bodies.</span></h2>
@@ -122,13 +153,13 @@
       <div class="lp-pillars">
         <article class="lp-pillar" style="--accent: var(--brand)">
           <h3>patch.Init</h3><div class="when">Eurorack hardware</div>
-          <p>Four knobs, two layers. Hold the button for feedback, chaos, symmetry and shape, with soft takeover so nothing jumps.</p>
+          <p>Pitch and the three macros up front, their CVs on the jacks. Hold the button for ratio, shape, symmetry and fine, with soft takeover so nothing jumps.</p>
           <pre><code>make firmware
 make -C hw program-dfu</code></pre>
         </article>
         <article class="lp-pillar" style="--accent: var(--info)">
-          <h3>VCV Rack</h3><div class="when">16 HP, every control on the panel</div>
-          <p>The same voice with a knob, a CV input and an attenuverter for each of its sins.</p>
+          <h3>VCV Rack</h3><div class="when">16 HP, the same panel</div>
+          <p>Mirrors the hardware knob for knob, through the same panel mapping, so a patch moves between them unchanged.</p>
           <pre><code>make vcv RACK_DIR=../Rack-SDK</code></pre>
         </article>
         <article class="lp-pillar" style="--accent: var(--ok)">
@@ -141,7 +172,7 @@ make analyze</code></pre>
     </div>
   </section>
 
-  <section class="lp-section lp-section--alt">
+  <section class="lp-section">
     <div class="lp-wrap">
       <p class="lp-eyebrow">How it works</p>
       <h2>Bend. Fold.<br><span>Feed it to itself.</span></h2>
@@ -152,15 +183,15 @@ make analyze</code></pre>
     </div>
   </section>
 
-  <section class="lp-section">
+  <section class="lp-section lp-section--alt">
     <div class="lp-wrap">
       <p class="lp-eyebrow">The grimoire</p>
       <h2>Go deeper.</h2>
       <div class="lp-docs">
         {% for path, name, blurb in [
           ("getting-started/", "Getting started", "Flash the patch.Init or install the plugin"),
-          ("panel/", "Reading the panel", "Every sigil, decoded"),
-          ("patch-init/", "Control map", "Four knobs, two layers"),
+          ("panel/", "Panel and macros", "Every sigil and macro, decoded"),
+          ("patch-init/", "Control map", "Three macros, one shift layer"),
           ("patches/", "Six evil patches", "Reactor hum to legion"),
           ("vcv-rack/", "VCV Rack", "What differs from the hardware"),
           ("calibration/", "Calibration", "Trim 1V/oct and output level"),

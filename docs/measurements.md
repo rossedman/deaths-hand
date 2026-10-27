@@ -10,13 +10,16 @@ Every number here is printed by the host tests (`make test`), which run the same
 | Self-feedback 0 → 0.5 → 1 | pure sine (H2 −117 dB) → saw-like (H2 −10 dB) → noisy |
 | 60 s worst-case evil (fb, chaos, Lorenz, all max) | finite, alive, no DC lock-up, at 4 pitches |
 | Output range | ±5 V nominal, DC-free, peaks up to ~7.3 V with heavy feedback/chaos |
+| FLESH 0 → 1: spectral centroid | 220 Hz → 6.8 kHz, rising at every step |
+| MALICE: inharmonic share at 0.5 / 0.8 / 0.9 | 0.00 / 0.97 / 1.00 |
+| LEGION 0.4 → 1: beating | 2.8× → 4.8× |
 | Unison: 4 voices, no spread vs 1 voice | identical to within 0.05 mV |
 | Unison: 4 voices spread, biased fold | beat-rate wobble 0.05 V (0.26 V without the envelope-aware DC fix) |
-| patch.Init flash / RAM | 105 KB of 128 KB / 36 KB (arm-gcc 13.3) |
+| patch.Init flash / RAM | 106 KB of 128 KB / 36 KB (arm-gcc 13.3) |
 
 ## What the suite checks
 
-Pitch accuracy, stability under abusive parameters and external FM, through-zero behaviour, the unison stack (one-voice equivalence, beating from spread and drift, the sub, DC under a biased fold, click-free voice changes), the three-layer control logic, the feedback spectrum, that chaos actually breaks periodicity, Lorenz boundedness from 0.01 Hz to 20 kHz, 60-second worst-case runs, the shift-layer pickup logic, and output bounds. Any failed check makes `make test` exit non-zero.
+Pitch accuracy, stability under abusive parameters and external FM, through-zero behaviour, the three macros (no jumps in their curves, and each one's sweep: FLESH's brightness, MALICE's path from harmonic to chaos, LEGION's sub and beating), the unison stack (one-voice equivalence, beating from spread and drift, the sub, DC under a biased fold, click-free voice changes), the feedback spectrum, that chaos actually breaks periodicity, Lorenz boundedness from 0.01 Hz to 20 kHz, 60-second worst-case runs, the shift-layer pickup logic, and output bounds. Any failed check makes `make test` exit non-zero.
 
 `make analyze` also writes spectrograms of the fold and FM sweeps with and without oversampling to `test/out/aliasing.png`, and prints the alias energy of each steady tone:
 
