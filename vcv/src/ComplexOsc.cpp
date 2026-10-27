@@ -159,4 +159,4 @@ struct ComplexOscWidget : ModuleWidget {
     }
 };
 
-Model* modelComplexOsc = createModel<ComplexOscModule, ComplexOscWidget>("ComplexOsc");
+Model* modelComplexOsc = createModel<ComplexOscModule, ComplexOscWidget>("DeathsHand");

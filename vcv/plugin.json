@@ -1,6 +1,6 @@
 {
-  "slug": "RossComplexOsc",
-  "name": "Ross Complex Osc",
+  "slug": "DeathsHand",
+  "name": "Death's Hand",
   "version": "2.0.0",
   "license": "MIT",
   "brand": "Ross",
@@ -9,15 +9,18 @@
   "authorUrl": "",
   "pluginUrl": "",
   "manualUrl": "",
-  "sourceUrl": "",
+  "sourceUrl": "https://github.com/rossedman/deaths-hand",
   "donateUrl": "",
   "changelogUrl": "",
   "modules": [
     {
-      "slug": "ComplexOsc",
-      "name": "Complex Osc",
-      "description": "West-coast complex oscillator: through-zero FM, wavefolder, AM/ring. Same DSP as the patch.Init firmware.",
-      "tags": ["VCO", "Waveshaper"]
+      "slug": "DeathsHand",
+      "name": "Death's Hand",
+      "description": "An evil complex oscillator: through-zero FM, wavefolder, AM/ring, self-feedback, chaos cross-FM and a Lorenz modulator. Same DSP as the patch.Init firmware.",
+      "tags": [
+        "VCO",
+        "Waveshaper"
+      ]
     }
   ]
 }

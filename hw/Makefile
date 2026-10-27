@@ -5,7 +5,7 @@
 #   make -C hw                  # build
 #   make -C hw program-dfu      # flash over USB (hold BOOT, tap RESET first)
 
-TARGET        = complex-osc
+TARGET        = deaths-hand
 CPP_SOURCES   = main.cpp
 CPP_STANDARD  = -std=gnu++17
 OPT           = -O2

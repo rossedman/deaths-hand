@@ -1,6 +1,8 @@
-# complex-osc
+# Death's Hand
 
-A West-Coast style complex oscillator — two oscillators where the modulator
+![panel](vcv/res/panel-preview.png)
+
+An evil West-Coast style complex oscillator for the Electrosmith patch.Init and VCV Rack — two oscillators where the modulator
 shapes the primary through **through-zero FM**, a **wavefolder** (timbre +
 symmetry), and **AM / ring mod** — plus three ways to make it misbehave:
 **self-feedback**, **chaos** (the primary FMs the modulator back) and a
@@ -27,6 +29,33 @@ modulator ──┬────────────────────�
 
 Everything runs 4× oversampled and is decimated with a 129-tap Kaiser FIR.
 
+## Reading the panel
+
+There are no words on the panel, only sigils. Each knob's sigil is repeated on
+the jack and the attenuverter that modulate it, so the panel reads in columns.
+
+| Sigil | Means |
+|---|---|
+| Eye (lashes) | Pitch · V/OCT input |
+| Slit eye | Fine tune |
+| Vesica (two rings) | Ratio / modulator pitch · MOD V/OCT input |
+| Trident | FM index · its CV and attenuverter |
+| Zigzag in a circle | Timbre (fold) · its CV and attenuverter |
+| Hourglass | Symmetry · its CV |
+| Crossed ring ⊗ | AM → ring mod · its CV |
+| Serpent | Modulator → timbre |
+| Ouroboros | Self-feedback · its CV and attenuverter |
+| Eight-arrow star | Chaos · its CV and attenuverter |
+| Triangle in a circle | Modulator shape. The red last stop is Lorenz |
+| Key | Ratio lock. The red arrow is up = locked |
+| Spiral | External FM input |
+| Pillars and lightning | Sync input |
+| Blood drop (solid) | Primary out |
+| Blood drop with rings | Modulator out |
+
+Bone rings mark inputs, red rings mark outputs, and the outputs sit on the
+altar. The edge runes and the summoning circle are decoration.
+
 ## Measured (host tests)
 
 | | |
@@ -45,7 +74,7 @@ Everything runs 4× oversampled and is decimated with a 129-tap Kaiser FIR.
 1. Put the Patch SM into its bootloader: hold **BOOT**, tap **RESET**, release BOOT
    (both buttons are on the Patch SM board on the back of the module).
 2. Open Electrosmith's **Daisy Web Programmer** in Chrome (it uses WebUSB), connect
-   the module over USB, choose `complex-osc.bin` and flash.
+   the module over USB, choose `deaths-hand.bin` and flash.
 
 ### From source (macOS)
 ```sh
@@ -53,7 +82,7 @@ brew install --cask gcc-arm-embedded
 brew install dfu-util
 git submodule update --init --recursive     # pulls lib/libDaisy
 make -C lib/libDaisy                        # once
-make -C hw                                  # → hw/build/complex-osc.bin
+make -C hw                                  # → hw/build/deaths-hand.bin
 make -C hw program-dfu                      # after BOOT + RESET
 ```
 
@@ -144,7 +173,8 @@ make -C vcv RACK_DIR=../../Rack-SDK install
 ```
 The panel is generated: `python3 vcv/res/make_panel.py` writes both
 `res/ComplexOsc.svg` and `src/PanelLayout.hpp` from one table, so the widget
-positions can't drift from the artwork. It uses real Eurorack dimensions
+positions can't drift from the artwork. Every sigil is drawn from code (no
+fonts or images), so it renders in Rack and scales cleanly to a printed panel. It uses real Eurorack dimensions
 (16 HP × 128.5 mm), so it's also a starting point for a physical panel.
 
 ## Design notes
