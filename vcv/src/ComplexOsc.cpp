@@ -4,7 +4,7 @@
 // and CVs go through the same cosc::panelToParams the firmware uses.
 #include "plugin.hpp"
 #include "PanelLayout.hpp"
-#include "Panel.hpp"
+#include "dsp/Panel.hpp"
 
 struct ComplexOscModule : Module {
     enum ParamId {
