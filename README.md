@@ -30,7 +30,7 @@ Everything runs 4× oversampled and is decimated with a 129-tap Kaiser FIR.
 | 1V/oct tracking, −3 V … +5 V | worst error 0.09 cents |
 | Alias energy, heavy fold @ 2.96 kHz | −9 dB → **−84 dB** with 4× |
 | Alias energy, FM index 1.0 @ C7 | −40 dB → **−84 dB** with 4× |
-| Output range | ±5 V nominal, DC-free, peaks < 6 V |
+| Output range | ±5 V nominal, DC-free, peaks under 6 V in normal use |
 | patch.Init flash / RAM | 104 KB of 128 KB / 37 KB |
 
 ## Flash your patch.Init
