@@ -106,6 +106,8 @@ nav:
       - Changelog: changelog.md
       - Code of conduct: code-of-conduct.md
 
+copyright: Death's Hand is a Portal Electronics module · MIT license
+
 extra:
   social:
     - icon: fontawesome/brands/github

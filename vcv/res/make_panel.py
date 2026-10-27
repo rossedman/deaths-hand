@@ -12,6 +12,7 @@ a physical front panel.
 
 import math
 import random
+import re
 from pathlib import Path
 
 from matplotlib.font_manager import FontProperties
@@ -358,29 +359,25 @@ def drips(x0, x1, y, rng, keep_clear=()):
     return out
 
 
-# The project's mark (docs/assets/site/favicon.svg): a clawed hand with an eye
-# in its palm. Geometry is in the logo's 200-unit box, centred on (100, 100).
-HAND_FINGERS = [  # (rotation, pivot x, pivot y, path)
-    (-9, 79, 100, "M71,100 L71,55.6 C71,43.6 76.2,39.6 79,30.8 C81.8,39.6 87,43.6 87,55.6 L87,100 Z"),
-    (0, 100, 100, "M91.5,100 L91.5,48.7 C91.5,35.95 97.03,31.7 100,22.35 C102.97,31.7 108.5,35.95 108.5,48.7 L108.5,100 Z"),
-    (9, 121, 100, "M113,100 L113,55.6 C113,43.6 118.2,39.6 121,30.8 C123.8,39.6 129,43.6 129,55.6 L129,100 Z"),
-    (-42, 66, 128, "M58,128 L58,93.6 C58,81.6 63.2,77.6 66,68.8 C68.8,77.6 74,81.6 74,93.6 L74,128 Z"),
-    (42, 134, 128, "M126,128 L126,93.6 C126,81.6 131.2,77.6 134,68.8 C136.8,77.6 142,81.6 142,93.6 L142,128 Z"),
-]
-HAND_PALM = "M62,100 C62,94 67,90 73,90 L127,90 C133,90 138,94 138,100 L140,128 C140,150 124,166 100,170 C76,166 60,150 60,128 Z"
+# The maker's mark: Portal Electronics' doorway over its PORTAL wordmark, read from
+# the site's copies (docs/assets/site/portal*.svg) so panel and site can't drift.
+SITE = Path(__file__).resolve().parents[2] / "docs" / "assets" / "site"
 
 
-def hand_mark(cx, cy, size):
-    """The mark, `size` mm tall, as a faint relief: dried-blood outline, red eye."""
-    k = size / 150.0
-    out = [f'<g transform="translate({f(cx - 100 * k)} {f(cy - 96 * k)}) scale({k:.5f})">']
-    body = "".join(f'<path transform="rotate({a} {px} {py})" d="{d}"/>' for a, px, py, d in HAND_FINGERS) + f'<path d="{HAND_PALM}"/>'
-    out.append(f'<g fill="{BLOOD_DARK}" stroke="{BLOOD}" stroke-width="3" stroke-linejoin="round">{body}</g>')
-    out.append(f'<g fill="{BLOOD_DARK}">{body}</g>')  # hide the strokes where shapes overlap
-    out.append(f'<path d="M76,128 Q100,110 124,128 Q100,146 76,128 Z" fill="{BLOOD_HI}"/>')
-    out.append(f'<path d="M100,115 Q105,128 100,141 Q95,128 100,115 Z" fill="{BG}"/>')
-    out.append("</g>")
-    return out
+def svg_art(name, cx, top, height, colours):
+    """An SVG of two filled layers (line art, accent), `height` mm tall, centred on cx."""
+    text = (SITE / name).read_text()
+    _, _, w, h = (float(v) for v in re.search(r'viewBox="([^"]+)"', text).group(1).split())
+    k = height / h
+    out = [f'<g transform="translate({f(cx - w * k / 2)} {f(top)}) scale({k:.5f})">']
+    for d, colour in zip(re.findall(r' d="([^"]+)"', text), colours, strict=True):
+        out.append(f'<path fill="{colour}" fill-rule="evenodd" d="{d}"/>')
+    return out + ["</g>"]
+
+
+def makers_mark(cx, top):
+    """The door (12.5 mm) above the wordmark, in dried blood with red accents."""
+    return svg_art("portal.svg", cx, top, 12.5, (BLOOD, BLOOD_HI)) + svg_art("portal-wordmark.svg", cx, top + 14.2, 2.0, (BLOOD, BLOOD_HI))
 
 
 # ----------------------------------------------------------------- panel
@@ -413,8 +410,8 @@ def svg():
         x = 6.2 + i * (W - 12.4) / 22
         out.append(poly([(x, 79.3), (x + 0.5, 80), (x, 80.7), (x - 0.5, 80), (x, 79.3)], color=BLOOD, w=0.2))
 
-    # The mark, in the space left of the altar.
-    out += hand_mark((COLS[0] + COLS[1]) / 2, 116.5, 15.0)
+    # The maker's mark, in the space left of the altar.
+    out += makers_mark((COLS[0] + COLS[1]) / 2, 107.0)
 
     # Output altar.
     ax0, ax1 = COLS[2] - 7.5, COLS[3] + 7.5

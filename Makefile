@@ -51,9 +51,10 @@ panel:
 # Fail if the widget positions in PanelLayout.hpp have drifted from make_panel.py.
 # (The SVG title outlines depend on the installed font, so only the header is compared.)
 panel-check:
-	@tmp=$$(mktemp -d) && mkdir -p $$tmp/res $$tmp/src && cp vcv/res/make_panel.py $$tmp/res/ && \
-	$(PYTHON_TOOLS) python $$tmp/res/make_panel.py >/dev/null && \
-	diff -u vcv/src/PanelLayout.hpp $$tmp/src/PanelLayout.hpp; rc=$$?; rm -rf $$tmp; exit $$rc
+	@tmp=$$(mktemp -d) && mkdir -p $$tmp/vcv/res $$tmp/vcv/src $$tmp/docs/assets/site && \
+	cp vcv/res/make_panel.py $$tmp/vcv/res/ && cp docs/assets/site/portal.svg docs/assets/site/portal-wordmark.svg $$tmp/docs/assets/site/ && \
+	$(PYTHON_TOOLS) python $$tmp/vcv/res/make_panel.py >/dev/null && \
+	diff -u vcv/src/PanelLayout.hpp $$tmp/vcv/src/PanelLayout.hpp; rc=$$?; rm -rf $$tmp; exit $$rc
 
 # patch.Init firmware. Needs arm-none-eabi-gcc on PATH and the libDaisy submodule.
 firmware:

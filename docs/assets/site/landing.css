@@ -420,6 +420,12 @@
 .lp-hero__logo { width: 6rem; height: 6rem; }
 .lp-term__bar i:first-child { background: var(--brand-3); }
 
+/* The maker's lockup in the hero: Portal Electronics' door and wordmark. */
+.lp-maker { display: flex; align-items: center; gap: 0.55rem; }
+.lp-maker__door { height: 1.55rem; width: auto; }
+.lp-maker__word { height: 0.62rem; width: auto; }
+.lp-maker span { font-family: var(--md-text-font-family, Inter, sans-serif); font-size: 0.55rem; font-weight: 600; letter-spacing: 0.42em; text-transform: uppercase; color: var(--mist); }
+
 /* The panel and its sigil decoder. */
 .lp-panelart { display: flex; justify-content: center; }
 .lp-panelart img {

@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Changed
+
+- Death's Hand is a Portal Electronics module. The company's door mark and PORTAL wordmark, traced to SVG from the original artwork, are the maker's mark on the module panel and the credit on the site, the README banner and the social card. In VCV Rack the plugin's brand is now Portal Electronics. The hand stays Death's Hand's own mark.
+
 ## 0.1.1
 
 ### Fixed
