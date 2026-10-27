@@ -387,7 +387,7 @@
   mask-image: radial-gradient(ellipse 60% 70% at 50% 45%, #000 15%, transparent 70%);
   -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 45%, #000 15%, transparent 70%);
 }
-.lp-final__logo { width: 4.2rem; height: 4.2rem; margin-bottom: 1rem; animation: lp-float 6s ease-in-out infinite; }
+.lp-final__logo { width: auto; height: 5.5rem; margin-bottom: 1rem; animation: lp-float 6s ease-in-out infinite; }
 
 /* The occult layer: engraved capitals, rune columns, the summoning circle. */
 .md-header__title, .lp-title, .lp h2, .lp-panel h3, .lp-pillar h3, .lp-card h3, .lp-steps h4, .lp-doc b,
@@ -417,7 +417,7 @@
 }
 .lp-final .lp-sigil { left: 50%; top: 50%; width: 36rem; height: 36rem; margin: -18rem 0 0 -18rem; }
 .lp-hero__logo, .lp-final__logo { filter: drop-shadow(0 0 22px color-mix(in srgb, var(--brand) 40%, transparent)) drop-shadow(0 14px 24px rgba(0, 0, 0, 0.55)); }
-.lp-hero__logo { width: 6rem; height: 6rem; }
+.lp-hero__logo { width: auto; height: 7.5rem; }
 .lp-term__bar i:first-child { background: var(--brand-3); }
 
 /* The panel and its sigil decoder. */

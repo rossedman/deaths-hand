@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Changed
+
+- New mark: the Portal doorway with an eye, traced to SVG from the original artwork, in bone with a blood-red eye. A simplified version (door, triangle and eye) is the favicon and site header logo, where the full mark's rays would blur. The mark replaces the hand on the site, the banner, the social card and the module panel.
+
 ## 0.1.1
 
 ### Fixed

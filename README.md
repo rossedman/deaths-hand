@@ -69,7 +69,7 @@ the panel reads in columns.
 | Blood drop with rings | Modulator out |
 
 Bone rings mark inputs, red rings mark outputs, and the outputs sit on the
-altar. The hand, the edge runes and the summoning circle are decoration.
+altar. The Portal mark, the edge runes and the summoning circle are decoration.
 
 ## The macros
 

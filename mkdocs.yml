@@ -16,7 +16,7 @@ exclude_docs: |
 theme:
   name: material
   custom_dir: overrides
-  logo: assets/site/logo.svg
+  logo: assets/site/favicon.svg
   favicon: assets/site/favicon.svg
   palette:
     scheme: slate

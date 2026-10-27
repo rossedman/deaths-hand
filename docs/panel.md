@@ -1,7 +1,7 @@
 # Reading the panel
 
 <figure class="diagram" markdown>
-![The Death's Hand panel: pitch and the three macro knobs on top under their sigils, four settings knobs below, the ratio-lock key and routing knob, eight inputs, the hand mark, and the two outputs on a red altar, all over a faint summoning circle.](assets/panel.png){ width="360" }
+![The Death's Hand panel: pitch and the three macro knobs on top under their sigils, four settings knobs below, the ratio-lock key and routing knob, eight inputs, the Portal mark, and the two outputs on a red altar, all over a faint summoning circle.](assets/panel.png){ width="360" }
 </figure>
 
 There are no words on the panel, only sigils. The top row is the voice: pitch and the three character macros. Below them are the settings the patch.Init keeps on its shift layer. Each sigil repeats on the jack that modulates it, so the panel reads in columns.
@@ -23,7 +23,7 @@ There are no words on the panel, only sigils. The top row is the voice: pitch an
 | Blood drop (solid) | Primary out |
 | Blood drop with rings | Modulator out |
 
-Bone rings mark inputs, red rings mark outputs, and the outputs sit on the altar. The hand, the edge runes and the summoning circle are decoration.
+Bone rings mark inputs, red rings mark outputs, and the outputs sit on the altar. The Portal mark, the edge runes and the summoning circle are decoration.
 
 ## The macros
 
