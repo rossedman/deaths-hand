@@ -5,3 +5,5 @@ vcv/*.so
 vcv/*.dylib
 vcv/*.dll
 .DS_Store
+__pycache__/
+*.pyc
