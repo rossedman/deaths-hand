@@ -8,6 +8,6 @@ CXXFLAGS += -std=c++17
 SOURCES += $(wildcard src/*.cpp)
 
 DISTRIBUTABLES += res/ComplexOsc.svg
-DISTRIBUTABLES += $(wildcard LICENSE*)
+DISTRIBUTABLES += ../LICENSE
 
 include $(RACK_DIR)/plugin.mk

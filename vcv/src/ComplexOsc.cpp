@@ -1,69 +1,65 @@
 // VCV Rack adapter. The engine is the exact same ../dsp code the patch.Init
-// firmware runs — this file only maps Rack params/ports to cosc::Params.
+// firmware runs, and the panel mirrors the hardware: pitch and the three
+// character macros on top, the patch.Init's shift-layer settings below. Knobs
+// and CVs go through the same cosc::panelToParams the firmware uses.
 #include "plugin.hpp"
 #include "PanelLayout.hpp"
-#include "ComplexOsc.hpp"
+#include "Panel.hpp"
 
 struct ComplexOscModule : Module {
     enum ParamId {
-        PITCH_PARAM, FINE_PARAM, MOD_PITCH_PARAM, FM_INDEX_PARAM,
-        TIMBRE_PARAM, SYMMETRY_PARAM, AM_PARAM, TIMBRE_MOD_PARAM,
-        RATIO_LOCK_PARAM, MOD_SHAPE_PARAM, FM_CV_ATTEN_PARAM, TIMBRE_CV_ATTEN_PARAM,
-        FEEDBACK_PARAM, CHAOS_PARAM, FEEDBACK_CV_ATTEN_PARAM, CHAOS_CV_ATTEN_PARAM,
+        PITCH_PARAM,
+        FLESH_PARAM,
+        MALICE_PARAM,
+        LEGION_PARAM,
+        RATIO_PARAM,
+        MOD_SHAPE_PARAM,
+        SYMMETRY_PARAM,
+        FINE_PARAM,
+        RATIO_LOCK_PARAM,
+        ROUTING_PARAM,
         PARAMS_LEN
     };
-    enum InputId {
-        VOCT_INPUT, MOD_VOCT_INPUT, FM_INDEX_INPUT, TIMBRE_INPUT,
-        SYMMETRY_INPUT, AM_INPUT, EXT_FM_INPUT, SYNC_INPUT,
-        FEEDBACK_INPUT, CHAOS_INPUT,
-        INPUTS_LEN
-    };
+    enum InputId { VOCT_INPUT, FLESH_INPUT, MALICE_INPUT, LEGION_INPUT, SYMMETRY_INPUT, EXT_FM_INPUT, SYNC_INPUT, ROUTING_INPUT, INPUTS_LEN };
     enum OutputId { PRIMARY_OUTPUT, MOD_OUTPUT, OUTPUTS_LEN };
     enum LightId { LIGHTS_LEN };
 
     cosc::ComplexOsc<4> osc;
-    dsp::SchmittTrigger syncTrigger;
+    dsp::SchmittTrigger syncTrigger, routingTrigger;
     dsp::ClockDivider   paramDivider;
 
     // Shows the quantized ratio (lock mode) or modulator frequency (free mode).
-    struct ModPitchQuantity : ParamQuantity {
+    struct RatioQuantity : ParamQuantity {
         std::string getDisplayValueString() override {
             auto* m = dynamic_cast<ComplexOscModule*>(module);
             float v = getValue();
-            if (!m || m->params[RATIO_LOCK_PARAM].getValue() > 0.5f)
-                return string::f("%g : 1", cosc::quantizeRatio(v));
+            if (!m || m->params[RATIO_LOCK_PARAM].getValue() > 0.5f) return string::f("%g : 1", cosc::quantizeRatio(v));
             return string::f("%.3f Hz", cosc::voltsToHz(v * 11.f - 8.f));
         }
     };
 
     ComplexOscModule() {
         config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-        configParam(PITCH_PARAM, -3.f, 3.f, 0.f, "Pitch", " Hz", 2.f, dsp::FREQ_C4);
-        configParam(FINE_PARAM, -1.f, 1.f, 0.f, "Fine", " semitones");
-        configParam<ModPitchQuantity>(MOD_PITCH_PARAM, 0.f, 1.f, 0.25f, "Ratio / modulator pitch");
-        configParam(FM_INDEX_PARAM, 0.f, 1.f, 0.f, "FM index", "%", 0.f, 100.f);
-        configParam(TIMBRE_PARAM, 0.f, 1.f, 0.f, "Timbre (fold)", "%", 0.f, 100.f);
-        configParam(SYMMETRY_PARAM, -1.f, 1.f, 0.f, "Symmetry", "%", 0.f, 100.f);
-        configParam(AM_PARAM, 0.f, 1.f, 0.f, "AM → ring mod", "%", 0.f, 100.f);
-        configParam(TIMBRE_MOD_PARAM, 0.f, 1.f, 0.f, "Modulator → timbre", "%", 0.f, 100.f);
-        configSwitch(RATIO_LOCK_PARAM, 0.f, 1.f, 1.f, "Modulator", {"Free", "Ratio lock"});
+        const cosc::PanelState d;
+        // Pitch spans 6 octaves around C4: Hz = (C4 / 8) * 64^knob.
+        configParam(PITCH_PARAM, 0.f, 1.f, d.pitch, "Pitch", " Hz", 64.f, dsp::FREQ_C4 / 8.f);
+        configParam(FLESH_PARAM, 0.f, 1.f, 0.f, "Flesh: FM, fold, asymmetry", "%", 0.f, 100.f);
+        configParam(MALICE_PARAM, 0.f, 1.f, 0.f, "Malice: feedback, chaos", "%", 0.f, 100.f);
+        configParam(LEGION_PARAM, 0.f, 1.f, 0.f, "Legion: sub, voices, drift", "%", 0.f, 100.f);
+        configParam<RatioQuantity>(RATIO_PARAM, 0.f, 1.f, d.ratio, "Ratio / modulator pitch");
         configSwitch(MOD_SHAPE_PARAM, 0.f, 4.f, 0.f, "Modulator shape", {"Sine", "Triangle", "Saw", "Square", "Lorenz"});
-        configParam(FM_CV_ATTEN_PARAM, -1.f, 1.f, 0.f, "FM index CV", "%", 0.f, 100.f);
-        configParam(TIMBRE_CV_ATTEN_PARAM, -1.f, 1.f, 0.f, "Timbre CV", "%", 0.f, 100.f);
-        configParam(FEEDBACK_PARAM, 0.f, 1.f, 0.f, "Self-feedback", "%", 0.f, 100.f);
-        configParam(CHAOS_PARAM, 0.f, 1.f, 0.f, "Chaos (primary → modulator FM)", "%", 0.f, 100.f);
-        configParam(FEEDBACK_CV_ATTEN_PARAM, -1.f, 1.f, 0.f, "Feedback CV", "%", 0.f, 100.f);
-        configParam(CHAOS_CV_ATTEN_PARAM, -1.f, 1.f, 0.f, "Chaos CV", "%", 0.f, 100.f);
-        configInput(VOCT_INPUT, "Primary 1V/oct");
-        configInput(MOD_VOCT_INPUT, "Modulator 1V/oct (free) / ratio offset (lock)");
-        configInput(FM_INDEX_INPUT, "FM index CV");
-        configInput(TIMBRE_INPUT, "Timbre CV");
+        configParam(SYMMETRY_PARAM, 0.f, 1.f, d.symmetry, "Symmetry trim", "%", 0.f, 200.f, -100.f);
+        configParam(FINE_PARAM, 0.f, 1.f, d.fine, "Fine tune", " semitones", 0.f, 2.f, -1.f);
+        configSwitch(RATIO_LOCK_PARAM, 0.f, 1.f, 1.f, "Modulator", {"Free", "Ratio lock"});
+        configSwitch(ROUTING_PARAM, 0.f, 3.f, 0.f, "Routing", {"FM", "FM + timbre mod", "FM + AM", "FM + ring"});
+        configInput(VOCT_INPUT, "Pitch 1V/oct");
+        configInput(FLESH_INPUT, "Flesh CV (+-5 V sweeps the range)");
+        configInput(MALICE_INPUT, "Malice CV (+-5 V sweeps the range)");
+        configInput(LEGION_INPUT, "Legion CV (+-5 V sweeps the range)");
         configInput(SYMMETRY_INPUT, "Symmetry CV");
-        configInput(AM_INPUT, "AM CV (0–10 V)");
         configInput(EXT_FM_INPUT, "External FM (audio)");
         configInput(SYNC_INPUT, "Hard sync");
-        configInput(FEEDBACK_INPUT, "Feedback CV");
-        configInput(CHAOS_INPUT, "Chaos CV");
+        configInput(ROUTING_INPUT, "Next routing (trigger)");
         configOutput(PRIMARY_OUTPUT, "Primary");
         configOutput(MOD_OUTPUT, "Modulator");
         paramDivider.setDivision(4);
@@ -71,30 +67,24 @@ struct ComplexOscModule : Module {
     }
 
     void updateParams() {
-        cosc::Params p;
-        p.pitchV = params[PITCH_PARAM].getValue() + params[FINE_PARAM].getValue() / 12.f +
-                   inputs[VOCT_INPUT].getVoltage();
-
-        const float modKnob = params[MOD_PITCH_PARAM].getValue();
-        p.ratioLock         = params[RATIO_LOCK_PARAM].getValue() > 0.5f;
-        if (p.ratioLock)
-            p.ratio = cosc::quantizeRatio(modKnob + inputs[MOD_VOCT_INPUT].getVoltage() * 0.1f);
-        else
-            p.modPitchV = modKnob * 11.f - 8.f + inputs[MOD_VOCT_INPUT].getVoltage();
-
-        p.fmIndex = params[FM_INDEX_PARAM].getValue() +
-                    params[FM_CV_ATTEN_PARAM].getValue() * inputs[FM_INDEX_INPUT].getVoltage() / 5.f;
-        p.timbre = params[TIMBRE_PARAM].getValue() +
-                   params[TIMBRE_CV_ATTEN_PARAM].getValue() * inputs[TIMBRE_INPUT].getVoltage() / 5.f;
-        p.symmetry  = params[SYMMETRY_PARAM].getValue() + inputs[SYMMETRY_INPUT].getVoltage() / 5.f;
-        p.amDepth   = params[AM_PARAM].getValue() + inputs[AM_INPUT].getVoltage() / 10.f;
-        p.timbreMod = params[TIMBRE_MOD_PARAM].getValue();
-        p.feedback  = params[FEEDBACK_PARAM].getValue() +
-                     params[FEEDBACK_CV_ATTEN_PARAM].getValue() * inputs[FEEDBACK_INPUT].getVoltage() / 5.f;
-        p.chaos = params[CHAOS_PARAM].getValue() +
-                  params[CHAOS_CV_ATTEN_PARAM].getValue() * inputs[CHAOS_INPUT].getVoltage() / 5.f;
-        p.modShape  = static_cast<cosc::ModShape>(static_cast<int>(params[MOD_SHAPE_PARAM].getValue()));
-        osc.setParams(p);
+        cosc::PanelState s;
+        s.pitch  = params[PITCH_PARAM].getValue();
+        s.flesh  = params[FLESH_PARAM].getValue();
+        s.malice = params[MALICE_PARAM].getValue();
+        s.legion = params[LEGION_PARAM].getValue();
+        // The snap knobs return exact integers; map them to the centre of the patch.Init zones.
+        s.ratio      = params[RATIO_PARAM].getValue();
+        s.shape      = (params[MOD_SHAPE_PARAM].getValue() + 0.5f) / static_cast<float>(cosc::ModShape::Count);
+        s.symmetry   = params[SYMMETRY_PARAM].getValue();
+        s.fine       = params[FINE_PARAM].getValue();
+        s.ratioLock  = params[RATIO_LOCK_PARAM].getValue() > 0.5f;
+        s.routing    = static_cast<int>(params[ROUTING_PARAM].getValue());
+        s.pitchCv    = inputs[VOCT_INPUT].getVoltage();
+        s.fleshCv    = inputs[FLESH_INPUT].getVoltage();
+        s.maliceCv   = inputs[MALICE_INPUT].getVoltage();
+        s.legionCv   = inputs[LEGION_INPUT].getVoltage();
+        s.symmetryCv = inputs[SYMMETRY_INPUT].getVoltage();
+        osc.setParams(cosc::panelToParams(s));
     }
 
     void process(const ProcessArgs& args) override {
@@ -104,6 +94,8 @@ struct ComplexOscModule : Module {
             osc.snapSmoothers();
         }
         if (syncTrigger.process(inputs[SYNC_INPUT].getVoltage(), 0.1f, 1.f)) osc.sync();
+        if (routingTrigger.process(inputs[ROUTING_INPUT].getVoltage(), 0.1f, 1.f))
+            params[ROUTING_PARAM].setValue(static_cast<float>((static_cast<int>(params[ROUTING_PARAM].getValue()) + 1) % cosc::kNumRoutings));
         if (paramDivider.process()) updateParams();
 
         float primary, mod;
@@ -125,34 +117,25 @@ struct ComplexOscWidget : ModuleWidget {
         addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
         auto at = [](panel::Pos p) { return mm2px(Vec(p.x, p.y)); };
-
         addParam(createParamCentered<RoundLargeBlackKnob>(at(panel::PITCH_PARAM), module, M::PITCH_PARAM));
-        addParam(createParamCentered<RoundBlackKnob>(at(panel::FINE_PARAM), module, M::FINE_PARAM));
-        addParam(createParamCentered<RoundLargeBlackKnob>(at(panel::MOD_PITCH_PARAM), module, M::MOD_PITCH_PARAM));
-        addParam(createParamCentered<RoundLargeBlackKnob>(at(panel::FM_INDEX_PARAM), module, M::FM_INDEX_PARAM));
-        addParam(createParamCentered<RoundBlackKnob>(at(panel::TIMBRE_PARAM), module, M::TIMBRE_PARAM));
-        addParam(createParamCentered<RoundBlackKnob>(at(panel::SYMMETRY_PARAM), module, M::SYMMETRY_PARAM));
-        addParam(createParamCentered<RoundBlackKnob>(at(panel::AM_PARAM), module, M::AM_PARAM));
-        addParam(createParamCentered<RoundBlackKnob>(at(panel::TIMBRE_MOD_PARAM), module, M::TIMBRE_MOD_PARAM));
-        addParam(createParamCentered<CKSS>(at(panel::RATIO_LOCK_PARAM), module, M::RATIO_LOCK_PARAM));
+        addParam(createParamCentered<RoundLargeBlackKnob>(at(panel::FLESH_PARAM), module, M::FLESH_PARAM));
+        addParam(createParamCentered<RoundLargeBlackKnob>(at(panel::MALICE_PARAM), module, M::MALICE_PARAM));
+        addParam(createParamCentered<RoundLargeBlackKnob>(at(panel::LEGION_PARAM), module, M::LEGION_PARAM));
+        addParam(createParamCentered<RoundBlackKnob>(at(panel::RATIO_PARAM), module, M::RATIO_PARAM));
         addParam(createParamCentered<RoundBlackSnapKnob>(at(panel::MOD_SHAPE_PARAM), module, M::MOD_SHAPE_PARAM));
-        addParam(createParamCentered<Trimpot>(at(panel::FM_CV_ATTEN_PARAM), module, M::FM_CV_ATTEN_PARAM));
-        addParam(createParamCentered<Trimpot>(at(panel::TIMBRE_CV_ATTEN_PARAM), module, M::TIMBRE_CV_ATTEN_PARAM));
-        addParam(createParamCentered<RoundBlackKnob>(at(panel::FEEDBACK_PARAM), module, M::FEEDBACK_PARAM));
-        addParam(createParamCentered<RoundBlackKnob>(at(panel::CHAOS_PARAM), module, M::CHAOS_PARAM));
-        addParam(createParamCentered<Trimpot>(at(panel::FEEDBACK_CV_ATTEN_PARAM), module, M::FEEDBACK_CV_ATTEN_PARAM));
-        addParam(createParamCentered<Trimpot>(at(panel::CHAOS_CV_ATTEN_PARAM), module, M::CHAOS_CV_ATTEN_PARAM));
+        addParam(createParamCentered<RoundBlackKnob>(at(panel::SYMMETRY_PARAM), module, M::SYMMETRY_PARAM));
+        addParam(createParamCentered<RoundBlackKnob>(at(panel::FINE_PARAM), module, M::FINE_PARAM));
+        addParam(createParamCentered<CKSS>(at(panel::RATIO_LOCK_PARAM), module, M::RATIO_LOCK_PARAM));
+        addParam(createParamCentered<RoundBlackSnapKnob>(at(panel::ROUTING_PARAM), module, M::ROUTING_PARAM));
 
         addInput(createInputCentered<PJ301MPort>(at(panel::VOCT_INPUT), module, M::VOCT_INPUT));
-        addInput(createInputCentered<PJ301MPort>(at(panel::MOD_VOCT_INPUT), module, M::MOD_VOCT_INPUT));
-        addInput(createInputCentered<PJ301MPort>(at(panel::FM_INDEX_INPUT), module, M::FM_INDEX_INPUT));
-        addInput(createInputCentered<PJ301MPort>(at(panel::TIMBRE_INPUT), module, M::TIMBRE_INPUT));
+        addInput(createInputCentered<PJ301MPort>(at(panel::FLESH_INPUT), module, M::FLESH_INPUT));
+        addInput(createInputCentered<PJ301MPort>(at(panel::MALICE_INPUT), module, M::MALICE_INPUT));
+        addInput(createInputCentered<PJ301MPort>(at(panel::LEGION_INPUT), module, M::LEGION_INPUT));
         addInput(createInputCentered<PJ301MPort>(at(panel::SYMMETRY_INPUT), module, M::SYMMETRY_INPUT));
-        addInput(createInputCentered<PJ301MPort>(at(panel::AM_INPUT), module, M::AM_INPUT));
         addInput(createInputCentered<PJ301MPort>(at(panel::EXT_FM_INPUT), module, M::EXT_FM_INPUT));
         addInput(createInputCentered<PJ301MPort>(at(panel::SYNC_INPUT), module, M::SYNC_INPUT));
-        addInput(createInputCentered<PJ301MPort>(at(panel::FEEDBACK_INPUT), module, M::FEEDBACK_INPUT));
-        addInput(createInputCentered<PJ301MPort>(at(panel::CHAOS_INPUT), module, M::CHAOS_INPUT));
+        addInput(createInputCentered<PJ301MPort>(at(panel::ROUTING_INPUT), module, M::ROUTING_INPUT));
 
         addOutput(createOutputCentered<PJ301MPort>(at(panel::MOD_OUTPUT), module, M::MOD_OUTPUT));
         addOutput(createOutputCentered<PJ301MPort>(at(panel::PRIMARY_OUTPUT), module, M::PRIMARY_OUTPUT));

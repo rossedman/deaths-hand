@@ -20,11 +20,11 @@ class Decimator {
     // of a 24-bit codec in practice.
     void init(float stopbandDb = 90.f) {
         const double beta   = kaiserBeta(stopbandDb);
-        const double cutoff = 0.5 / Factor;  // normalized to the oversampled rate
+        const double cutoff = 0.5 / Factor; // normalized to the oversampled rate
         const double i0b    = besselI0(beta);
         const int    mid    = Taps / 2;
         double       h[Taps];
-        double       sum    = 0.0;
+        double       sum = 0.0;
         for (int n = 0; n < Taps; ++n) {
             int    k    = n - mid;
             double sinc = k == 0 ? 2.0 * cutoff : std::sin(2.0 * 3.14159265358979 * cutoff * k) / (3.14159265358979 * k);
@@ -87,7 +87,10 @@ class Decimator<1, Taps> {
   public:
     void init(float = 0.f) {}
     void reset() {}
-    bool push(float x, float& out) { out = x; return true; }
+    bool push(float x, float& out) {
+        out = x;
+        return true;
+    }
     static constexpr int latency() { return 0; }
 };
 

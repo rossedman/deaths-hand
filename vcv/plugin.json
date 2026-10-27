@@ -6,12 +6,12 @@
   "brand": "Ross",
   "author": "Ross Edman",
   "authorEmail": "",
-  "authorUrl": "",
-  "pluginUrl": "",
-  "manualUrl": "",
+  "authorUrl": "https://github.com/rossedman",
+  "pluginUrl": "https://rossedman.io/deaths-hand/",
+  "manualUrl": "https://rossedman.io/deaths-hand/panel/",
   "sourceUrl": "https://github.com/rossedman/deaths-hand",
   "donateUrl": "",
-  "changelogUrl": "",
+  "changelogUrl": "https://github.com/rossedman/deaths-hand/blob/main/CHANGELOG.md",
   "modules": [
     {
       "slug": "DeathsHand",

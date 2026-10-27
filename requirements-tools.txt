@@ -1,0 +1,5 @@
+# Python for the panel generator and the analysis plots, run with:
+#   uv run --no-project --with-requirements requirements-tools.txt python ...
+matplotlib==3.10.7
+numpy==2.3.4
+scipy==1.16.3

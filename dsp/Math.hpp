@@ -18,12 +18,12 @@ inline float lerpf(float a, float b, float t) { return a + (b - a) * t; }
 // 2^x without powf. Range-reduces to [-0.5, 0.5] and uses a 6th-order
 // polynomial: worst-case error ~3e-6 relative (~0.005 cents).
 inline float fastExp2(float x) {
-    x        = clampf(x, -126.f, 126.f);
-    float n  = std::floor(x + 0.5f);
-    float f  = x - n;
-    float p  = 1.0f + f * (0.69314718f + f * (0.24022651f + f * (0.05550411f + f * (0.00961813f + f * (0.00133336f + f * 0.00015404f)))));
+    x            = clampf(x, -126.f, 126.f);
+    float   n    = std::floor(x + 0.5f);
+    float   f    = x - n;
+    float   p    = 1.0f + f * (0.69314718f + f * (0.24022651f + f * (0.05550411f + f * (0.00961813f + f * (0.00133336f + f * 0.00015404f)))));
     int32_t bits = (static_cast<int32_t>(n) + 127) << 23;
-    float scale;
+    float   scale;
     std::memcpy(&scale, &bits, sizeof(scale));
     return p * scale;
 }
@@ -58,21 +58,19 @@ inline float polyBlep(float t, float dt) {
 // One-pole smoother for knob/CV values (kills zipper noise).
 struct Smoother {
     float y = 0.f, coeff = 1.f;
-    void setTime(float seconds, float sampleRate) {
-        coeff = seconds <= 0.f ? 1.f : 1.f - std::exp(-1.f / (seconds * sampleRate));
-    }
+    void  setTime(float seconds, float sampleRate) { coeff = seconds <= 0.f ? 1.f : 1.f - std::exp(-1.f / (seconds * sampleRate)); }
     float process(float x) { return y += coeff * (x - y); }
-    void reset(float x) { y = x; }
+    void  reset(float x) { y = x; }
 };
 
 // One-pole DC blocker (~10 Hz). Outputs on hardware are DC-coupled.
 struct DcBlocker {
     float x1 = 0.f, y1 = 0.f, r = 0.9987f;
-    void setSampleRate(float sr) { r = 1.f - (kTwoPi * 10.f / sr); }
+    void  setSampleRate(float sr) { r = 1.f - (kTwoPi * 10.f / sr); }
     float process(float x) {
         float y = x - x1 + r * y1;
-        x1 = x;
-        y1 = y;
+        x1      = x;
+        y1      = y;
         return y;
     }
 };

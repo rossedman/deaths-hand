@@ -7,3 +7,11 @@ vcv/*.dll
 .DS_Store
 __pycache__/
 *.pyc
+.ruff_cache/
+.venv/
+/site/
+.vscode/
+.idea/
+*.swp
+compile_commands.json
+.cache/

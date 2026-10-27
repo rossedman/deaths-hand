@@ -43,7 +43,11 @@ struct LorenzOsc {
         if (!(std::fabs(x) < 100.f && std::fabs(y) < 100.f && z > -10.f && z < 120.f)) reset();
         return clampf(x * (1.f / 20.f), -1.f, 1.f);
     }
-    void reset() { x = 1.f; y = 1.f; z = 20.f; }
+    void reset() {
+        x = 1.f;
+        y = 1.f;
+        z = 20.f;
+    }
 };
 
 enum class ModShape : uint8_t { Sine = 0, Triangle, Saw, Square, Lorenz, Count };
@@ -61,16 +65,16 @@ struct ModOscillator {
         float t  = phasor.tick(inc);
         float dt = clampf(std::fabs(inc), 0.f, 0.5f);
         switch (shape) {
-            case ModShape::Sine: return sinTurns(t);
-            case ModShape::Triangle: return 1.f - 4.f * std::fabs(t - 0.5f);
-            case ModShape::Saw: return (2.f * t - 1.f) - polyBlep(t, dt);
-            case ModShape::Square: {
-                float sq = t < 0.5f ? 1.f : -1.f;
-                float t2 = t + 0.5f;
-                t2 -= std::floor(t2);
-                return sq + polyBlep(t, dt) - polyBlep(t2, dt);
-            }
-            default: return 0.f;
+        case ModShape::Sine: return sinTurns(t);
+        case ModShape::Triangle: return 1.f - 4.f * std::fabs(t - 0.5f);
+        case ModShape::Saw: return (2.f * t - 1.f) - polyBlep(t, dt);
+        case ModShape::Square: {
+            float sq = t < 0.5f ? 1.f : -1.f;
+            float t2 = t + 0.5f;
+            t2 -= std::floor(t2);
+            return sq + polyBlep(t, dt) - polyBlep(t2, dt);
+        }
+        default: return 0.f;
         }
     }
     void reset() {
