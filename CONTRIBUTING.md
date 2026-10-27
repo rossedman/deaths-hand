@@ -22,6 +22,7 @@ Building the other targets needs more:
 | VCV Rack plugin | the [Rack 2 SDK](https://vcvrack.com/downloads/), unpacked; `zstd` | `make vcv RACK_DIR=path/to/Rack-SDK` |
 | Spectrograms | nothing extra (uv fetches numpy, scipy, matplotlib) | `make analyze` |
 | Docs site | nothing extra (uv fetches MkDocs) | `make docs-serve` |
+| Banner, social card, diagram | Chrome or Chromium (fonts are vendored) | `docs/assets/render.sh` |
 
 ## Check your work
 

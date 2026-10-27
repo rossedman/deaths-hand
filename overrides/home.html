@@ -1,0 +1,193 @@
+{#- The landing page. Everything renders in the tabs block, outside Material's
+    content grid, so sections can run edge to edge. Styles: docs/assets/site/landing.css -#}
+{% extends "main.html" %}
+
+{% set gh = "https://github.com/rossedman/deaths-hand" %}
+{% set install = "git clone --recurse-submodules https://github.com/rossedman/deaths-hand && cd deaths-hand && make check" %}
+
+{% block tabs %}
+{{ super() }}
+<div class="lp">
+
+  <section class="lp-hero">
+    <div class="lp-sigil" aria-hidden="true"></div>
+    <div class="lp-runes lp-runes--l" aria-hidden="true"></div>
+    <div class="lp-runes lp-runes--r" aria-hidden="true"></div>
+    <div class="lp-wrap lp-hero__inner">
+      <div>
+        <img class="lp-hero__logo" src="{{ 'assets/site/logo.svg' | url }}" alt="">
+        <p class="lp-kicker">rossedman/deaths-hand</p>
+        <h1 class="lp-title">Death's Hand<small>Two oscillators. One will. No mercy.</small></h1>
+        <p class="lp-tagline">An evil West-Coast complex oscillator for the <b>Electrosmith patch.Init</b> and <b>VCV Rack</b>: through-zero FM, a wavefolder, ring mod, self-feedback, chaos and a Lorenz heart. <b>One DSP core, measured to the cent.</b></p>
+        <div class="lp-install">
+          <span class="lp-install__prompt">$</span>
+          <code>{{ install }}</code>
+          <button class="lp-copy" data-copy="{{ install }}" aria-label="Copy the clone and check command">
+            {% include ".icons/material/content-copy.svg" %}
+          </button>
+        </div>
+        <div class="lp-cta">
+          <a class="lp-btn lp-btn--primary" href="{{ 'getting-started/' | url }}">Summon it {% include ".icons/material/arrow-right.svg" %}</a>
+          <a class="lp-btn" href="{{ 'patches/' | url }}">{% include ".icons/material/skull-outline.svg" %} Five evil patches</a>
+        </div>
+      </div>
+
+      <div class="lp-term" aria-label="A terminal running the host tests">
+        <div class="lp-term__bar"><i></i><i></i><i></i><span>make test</span></div>
+        <div class="lp-term__body" data-typing>
+          <div><span class="p">$</span> <span class="c" data-type>make test</span></div>
+          <div><span class="c">pitch tracking</span> <span class="d">(1V/oct, 0 V = C4)</span></div>
+          <div><span class="d">  worst error:</span> <span class="ok">+0.0907 cents</span></div>
+          <div><span class="c">self-feedback:</span> <span class="d">sine -&gt; saw-like -&gt; noise</span></div>
+          <div><span class="d">  fb 1.00  H2</span>  <span class="w">-5.7 dB</span></div>
+          <div><span class="c">chaos:</span> <span class="d">cross-FM should break periodicity</span></div>
+          <div><span class="d">  chaos 1  non-harmonic</span>  <span class="e">-0.0 dB</span></div>
+          <div><span class="c">long-run stability:</span> <span class="d">60 s of worst-case evil</span></div>
+          <div><span class="d">  +0 V  peak</span> 5.08 V<span class="d">  finite</span> <span class="ok">yes</span></div>
+          <div><span class="p">all tests passed</span><span class="lp-caret"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="lp-wrap lp-stats">
+      <li><b>0.09¢</b><span>worst 1V/oct error, −3 V to +5 V</span></li>
+      <li><b>−84 dB</b><span>alias energy, 4× oversampled</span></li>
+      <li><b>60 s</b><span>of worst-case evil, still finite</span></li>
+      <li><b>106 KB</b><span>of the patch.Init's 128 KB flash</span></li>
+    </ul>
+  </section>
+
+  <section class="lp-section" id="the-voice">
+    <div class="lp-wrap lp-split">
+      <div>
+        <p class="lp-eyebrow">The voice</p>
+        <h2>Two voices.<br><span>One devours.</span></h2>
+        <p class="lp-lede">A modulator bends the primary through through-zero FM, folds it, and rings it. Then three things make it misbehave: the primary feeds its own phase, it feeds the modulator's pitch, and the modulator can become a strange attractor that never repeats.</p>
+        <ul class="lp-points">
+          <li>{% include ".icons/material/sine-wave.svg" %} Linear through-zero FM: the phase runs backwards</li>
+          <li>{% include ".icons/material/sync.svg" %} Self-feedback from pure sine to saw to noise</li>
+          <li>{% include ".icons/material/chart-bell-curve-cumulative.svg" %} A Lorenz attractor as a modulator, 0.01 Hz to 20 kHz</li>
+        </ul>
+        <a class="lp-link" href="{{ 'how-it-works/' | url }}">See the anatomy {% include ".icons/material/arrow-right.svg" %}</a>
+      </div>
+      <div class="lp-stack">
+        <article class="lp-panel" aria-label="Self-feedback test output">
+          <div class="lp-panel__head">
+            <span class="lp-panel__id">host_tests</span><span class="lp-pill lp-pill--ok">passing</span>
+            <span class="lp-panel__meta">make test</span>
+          </div>
+          <h3>Feedback, measured</h3>
+          <div class="lp-panel__sub">Harmonic levels as self-feedback rises</div>
+          <div class="lp-well"><span class="d">self-feedback: sine -&gt; saw-like -&gt; noise</span>
+  fb 0.00  H2 <span class="ok">-117.2 dB</span>  non-harmonic -69.1 dB
+  fb 0.50  H2  <span class="w">-10.5 dB</span>  non-harmonic -67.3 dB
+  fb 0.75  H2   <span class="w">-7.0 dB</span>  non-harmonic -51.5 dB
+  fb 1.00  H2   <span class="w">-5.7 dB</span>  non-harmonic <span class="e">-43.0 dB</span></div>
+          <div class="lp-quote lp-quote--ok">Without the two-sample average, feedback hunts at Nyquist and turns to hiss far too early.<small>docs/how-it-works.md</small></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-section lp-section--alt" id="the-panel">
+    <div class="lp-wrap lp-split">
+      <div class="lp-panelart">
+        <img src="{{ 'assets/panel.png' | url }}" width="560" height="885" alt="The Death's Hand panel: sixteen controls marked with sigils over a faint summoning circle, rune columns down both edges, and the two outputs on a red altar." loading="lazy">
+      </div>
+      <div>
+        <p class="lp-eyebrow">The panel</p>
+        <h2>No words.<br><span>Only sigils.</span></h2>
+        <p class="lp-lede">Each knob's sigil repeats on the jack and the attenuverter that modulate it, so the panel reads in columns. Bone rings are inputs; red rings are outputs, and they sit on the altar.</p>
+        <ul class="lp-sigils">
+          <li><b>Eye</b><span>pitch</span></li>
+          <li><b>Vesica</b><span>ratio, modulator pitch</span></li>
+          <li><b>Trident</b><span>FM index</span></li>
+          <li><b>Zigzag</b><span>timbre (fold)</span></li>
+          <li><b>Hourglass</b><span>symmetry</span></li>
+          <li><b>Crossed ring</b><span>AM → ring mod</span></li>
+          <li><b>Ouroboros</b><span>self-feedback</span></li>
+          <li><b>Eight-arrow star</b><span>chaos</span></li>
+        </ul>
+        <p class="lp-center" style="text-align:left"><a class="lp-link" href="{{ 'panel/' | url }}">The full decoder {% include ".icons/material/arrow-right.svg" %}</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-section">
+    <div class="lp-wrap">
+      <p class="lp-eyebrow">Three vessels</p>
+      <h2>One core.<br><span>Three bodies.</span></h2>
+      <p class="lp-lede lp-lede--center">The DSP lives in <code>dsp/</code>: no heap, no platform headers, volts in and volts out. The firmware, the plugin and the tests include it unchanged.</p>
+      <div class="lp-pillars">
+        <article class="lp-pillar" style="--accent: var(--brand)">
+          <h3>patch.Init</h3><div class="when">Eurorack hardware</div>
+          <p>Four knobs, two layers. Hold the button for feedback, chaos, symmetry and shape, with soft takeover so nothing jumps.</p>
+          <pre><code>make firmware
+make -C hw program-dfu</code></pre>
+        </article>
+        <article class="lp-pillar" style="--accent: var(--info)">
+          <h3>VCV Rack</h3><div class="when">16 HP, every control on the panel</div>
+          <p>The same voice with a knob, a CV input and an attenuverter for each of its sins.</p>
+          <pre><code>make vcv RACK_DIR=../Rack-SDK</code></pre>
+        </article>
+        <article class="lp-pillar" style="--accent: var(--ok)">
+          <h3>Host tests</h3><div class="when">every pull request</div>
+          <p>Pitch, aliasing, feedback, chaos, Lorenz bounds and minute-long worst-case runs, plus WAV renders of every patch.</p>
+          <pre><code>make test
+make analyze</code></pre>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-section lp-section--alt">
+    <div class="lp-wrap">
+      <p class="lp-eyebrow">How it works</p>
+      <h2>Bend. Fold.<br><span>Feed it to itself.</span></h2>
+      <figure class="lp-figure">
+        <a href="{{ 'assets/how-it-works.png' | url }}"><img width="2560" height="1440" src="{{ 'assets/how-it-works.png' | url }}" alt="Signal flow: V/OCT drives the primary; the modulator feeds it through through-zero FM, sets the wavefolder's timbre and the AM or ring depth, and goes to MOD OUT. The primary runs through the wavefolder, AM or ring, and the 4x decimator to OUT. Red feedback paths: the primary modulates its own phase, and modulates the modulator's frequency." loading="lazy"></a>
+        <figcaption>Tap to open the full-size diagram</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="lp-section">
+    <div class="lp-wrap">
+      <p class="lp-eyebrow">The grimoire</p>
+      <h2>Go deeper.</h2>
+      <div class="lp-docs">
+        {% for path, name, blurb in [
+          ("getting-started/", "Getting started", "Flash the patch.Init or install the plugin"),
+          ("panel/", "Reading the panel", "Every sigil, decoded"),
+          ("patch-init/", "Control map", "Four knobs, two layers"),
+          ("patches/", "Five evil patches", "Reactor hum to possession"),
+          ("vcv-rack/", "VCV Rack", "What differs from the hardware"),
+          ("calibration/", "Calibration", "Trim 1V/oct and output level"),
+          ("how-it-works/", "How it works", "The signal flow and design notes"),
+          ("measurements/", "Measurements", "What the tests prove"),
+        ] %}
+        <a class="lp-doc" href="{{ path | url }}">
+          <b>{{ name }}</b><span>{{ blurb }}</span>
+          {% include ".icons/material/arrow-right.svg" %}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-final">
+    <div class="lp-sigil" aria-hidden="true"></div>
+    <div class="lp-wrap">
+      <img class="lp-final__logo" src="{{ 'assets/site/logo.svg' | url }}" alt="">
+      <h2>Give it your hand.</h2>
+      <p class="lp-lede lp-lede--center">Free and open source under the MIT license.</p>
+      <div class="lp-cta lp-cta--center">
+        <a class="lp-btn lp-btn--primary" href="{{ 'getting-started/' | url }}">Summon it {% include ".icons/material/arrow-right.svg" %}</a>
+        <a class="lp-btn" href="{{ gh }}">{% include ".icons/material/source-repository.svg" %} View on GitHub</a>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block content %}{% endblock %}

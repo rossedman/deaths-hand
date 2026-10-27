@@ -1,6 +1,15 @@
-# Death's Hand
+<p align="center">
+  <img src="docs/assets/banner.png" alt="Death's Hand: two oscillators, one will, no mercy. An evil complex oscillator for patch.Init and VCV Rack." width="100%">
+</p>
 
-![panel](vcv/res/panel-preview.png)
+<p align="center">
+  <a href="https://github.com/rossedman/deaths-hand/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/rossedman/deaths-hand/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/rossedman/deaths-hand/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/rossedman/deaths-hand?color=e8363f&labelColor=170d10"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-e8363f?labelColor=170d10"></a>
+  <a href="https://rossedman.io/deaths-hand/"><img alt="Docs" src="https://img.shields.io/badge/docs-the%20grimoire-e8363f?labelColor=170d10"></a>
+</p>
+
+# Death's Hand
 
 An evil West-Coast style complex oscillator for the Electrosmith patch.Init and VCV Rack — two oscillators where the modulator
 shapes the primary through **through-zero FM**, a **wavefolder** (timbre +
@@ -30,6 +39,8 @@ modulator ──┬────────────────────�
 Everything runs 4× oversampled and is decimated with a 129-tap Kaiser FIR.
 
 ## Reading the panel
+
+<img src="vcv/res/panel-preview.png" alt="The Death's Hand panel" width="280" align="right">
 
 There are no words on the panel, only sigils. Each knob's sigil is repeated on
 the jack and the attenuverter that modulate it, so the panel reads in columns.
@@ -71,9 +82,11 @@ altar. The edge runes and the summoning circle are decoration.
 ## Flash your patch.Init
 
 ### Fastest: prebuilt binary
-1. Put the Patch SM into its bootloader: hold **BOOT**, tap **RESET**, release BOOT
+1. Download `deaths-hand.bin` from the [latest release](https://github.com/rossedman/deaths-hand/releases/latest).
+   Every asset is signed; see [Verifying releases](SECURITY.md#verifying-releases).
+2. Put the Patch SM into its bootloader: hold **BOOT**, tap **RESET**, release BOOT
    (both buttons are on the Patch SM board on the back of the module).
-2. Open Electrosmith's **Daisy Web Programmer** in Chrome (it uses WebUSB), connect
+3. Open Electrosmith's **Daisy Web Programmer** in Chrome (it uses WebUSB), connect
    the module over USB, choose `deaths-hand.bin` and flash.
 
 ### From source (macOS)
@@ -193,3 +206,11 @@ fonts or images), so it renders in Rack and scales cleanly to a printed panel. I
   reset guard, so no setting can make it run away or produce NaN.
 - **CPU:** cost is dominated by two 129-tap decimators. If the CPU meter says
   you need headroom, cascaded half-band filters are the next optimization.
+
+## Contributing
+
+Bug reports, DSP fixes, tests and new ways to misbehave are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first; `make check` runs the lint, host tests and panel check that CI runs. This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). Report security problems privately, as described in [SECURITY.md](SECURITY.md).
+
+## License
+
+[MIT](LICENSE) © 2026 Ross Edman. The vendored fonts in `docs/assets/` are under the SIL Open Font License.
