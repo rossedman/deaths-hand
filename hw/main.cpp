@@ -52,10 +52,10 @@ struct Routing {
     float timbreMod;
 };
 constexpr Routing kRoutings[] = {
-    {0.f, 0.f},   // 0: FM only
-    {0.f, 0.6f},  // 1: FM + modulator sweeps the folder
-    {0.5f, 0.f},  // 2: FM + classic AM
-    {1.f, 0.3f},  // 3: FM + ring mod + a little timbre mod
+    {0.f, 0.f},  // 0: FM only
+    {0.f, 0.6f}, // 1: FM + modulator sweeps the folder
+    {0.5f, 0.f}, // 2: FM + classic AM
+    {1.f, 0.3f}, // 3: FM + ring mod + a little timbre mod
 };
 constexpr int kNumRoutings = sizeof(kRoutings) / sizeof(kRoutings[0]);
 
@@ -108,8 +108,8 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, s
     const cosc::PickupKnob* s = knobs[kShift];
 
     cosc::Params p;
-    const float pitchCv = cvVolts(CV_5) * kPitchCvScale + kPitchCvOffset;
-    p.pitchV            = (n[0].value * 6.f - 3.f) + pitchCv; // knob spans 6 octaves around C4
+    const float  pitchCv = cvVolts(CV_5) * kPitchCvScale + kPitchCvOffset;
+    p.pitchV             = (n[0].value * 6.f - 3.f) + pitchCv; // knob spans 6 octaves around C4
 
     p.ratioLock = toggle.Pressed();
     if (p.ratioLock) {
@@ -122,16 +122,15 @@ void AudioCallback(AudioHandle::InputBuffer in, AudioHandle::OutputBuffer out, s
     p.timbre  = n[3].value + cvVolts(CV_7) * 0.2f;
 
     const float inSign = kInvertAudio ? -1.f : 1.f;
-    p.feedback = s[0].value;
-    p.chaos    = s[1].value;
+    p.feedback         = s[0].value;
+    p.chaos            = s[1].value;
     // Shift knob 3 centred = no bias; IN_R adds +-1 per +-5 V.
     p.symmetry = (s[2].value * 2.f - 1.f) + in[1][0] * inSign * kAudioFullScaleV * 0.2f;
-    p.modShape = static_cast<cosc::ModShape>(
-        static_cast<int>(cosc::clampf(s[3].value, 0.f, 0.999f) * static_cast<float>(cosc::ModShape::Count)));
+    p.modShape = static_cast<cosc::ModShape>(static_cast<int>(cosc::clampf(s[3].value, 0.f, 0.999f) * static_cast<float>(cosc::ModShape::Count)));
 
     const Routing& r = kRoutings[routing];
-    p.amDepth   = r.amDepth;
-    p.timbreMod = r.timbreMod;
+    p.amDepth        = r.amDepth;
+    p.timbreMod      = r.timbreMod;
 
     osc.setParams(p);
 
@@ -186,8 +185,7 @@ int main() {
 #if CPU_METER
         if (System::GetNow() - lastLog > 1000) {
             lastLog = System::GetNow();
-            hw.PrintLine("cpu avg " FLT_FMT3 "%%  max " FLT_FMT3 "%%",
-                         FLT_VAR3(cpu.GetAvgCpuLoad() * 100.f), FLT_VAR3(cpu.GetMaxCpuLoad() * 100.f));
+            hw.PrintLine("cpu avg " FLT_FMT3 "%%  max " FLT_FMT3 "%%", FLT_VAR3(cpu.GetAvgCpuLoad() * 100.f), FLT_VAR3(cpu.GetMaxCpuLoad() * 100.f));
         }
 #else
         (void)lastLog;

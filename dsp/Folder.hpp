@@ -25,7 +25,7 @@ class Folder {
     // Builds the J0 lookup table. Call once at init (uses std::cos, not RT-safe).
     void init() {
         for (int i = 0; i <= kTableSize; ++i) {
-            double a = static_cast<double>(i) * kTableMax / kTableSize, sum = 0.0;
+            double    a = static_cast<double>(i) * kTableMax / kTableSize, sum = 0.0;
             const int steps = 256; // J0(a) = 1/pi * integral_0^pi cos(a sin t) dt
             for (int k = 0; k < steps; ++k) {
                 double t = (k + 0.5) * 3.14159265358979 / steps;

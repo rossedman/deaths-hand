@@ -6,16 +6,35 @@
 
 struct ComplexOscModule : Module {
     enum ParamId {
-        PITCH_PARAM, FINE_PARAM, MOD_PITCH_PARAM, FM_INDEX_PARAM,
-        TIMBRE_PARAM, SYMMETRY_PARAM, AM_PARAM, TIMBRE_MOD_PARAM,
-        RATIO_LOCK_PARAM, MOD_SHAPE_PARAM, FM_CV_ATTEN_PARAM, TIMBRE_CV_ATTEN_PARAM,
-        FEEDBACK_PARAM, CHAOS_PARAM, FEEDBACK_CV_ATTEN_PARAM, CHAOS_CV_ATTEN_PARAM,
+        PITCH_PARAM,
+        FINE_PARAM,
+        MOD_PITCH_PARAM,
+        FM_INDEX_PARAM,
+        TIMBRE_PARAM,
+        SYMMETRY_PARAM,
+        AM_PARAM,
+        TIMBRE_MOD_PARAM,
+        RATIO_LOCK_PARAM,
+        MOD_SHAPE_PARAM,
+        FM_CV_ATTEN_PARAM,
+        TIMBRE_CV_ATTEN_PARAM,
+        FEEDBACK_PARAM,
+        CHAOS_PARAM,
+        FEEDBACK_CV_ATTEN_PARAM,
+        CHAOS_CV_ATTEN_PARAM,
         PARAMS_LEN
     };
     enum InputId {
-        VOCT_INPUT, MOD_VOCT_INPUT, FM_INDEX_INPUT, TIMBRE_INPUT,
-        SYMMETRY_INPUT, AM_INPUT, EXT_FM_INPUT, SYNC_INPUT,
-        FEEDBACK_INPUT, CHAOS_INPUT,
+        VOCT_INPUT,
+        MOD_VOCT_INPUT,
+        FM_INDEX_INPUT,
+        TIMBRE_INPUT,
+        SYMMETRY_INPUT,
+        AM_INPUT,
+        EXT_FM_INPUT,
+        SYNC_INPUT,
+        FEEDBACK_INPUT,
+        CHAOS_INPUT,
         INPUTS_LEN
     };
     enum OutputId { PRIMARY_OUTPUT, MOD_OUTPUT, OUTPUTS_LEN };
@@ -30,8 +49,7 @@ struct ComplexOscModule : Module {
         std::string getDisplayValueString() override {
             auto* m = dynamic_cast<ComplexOscModule*>(module);
             float v = getValue();
-            if (!m || m->params[RATIO_LOCK_PARAM].getValue() > 0.5f)
-                return string::f("%g : 1", cosc::quantizeRatio(v));
+            if (!m || m->params[RATIO_LOCK_PARAM].getValue() > 0.5f) return string::f("%g : 1", cosc::quantizeRatio(v));
             return string::f("%.3f Hz", cosc::voltsToHz(v * 11.f - 8.f));
         }
     };
@@ -72,27 +90,20 @@ struct ComplexOscModule : Module {
 
     void updateParams() {
         cosc::Params p;
-        p.pitchV = params[PITCH_PARAM].getValue() + params[FINE_PARAM].getValue() / 12.f +
-                   inputs[VOCT_INPUT].getVoltage();
+        p.pitchV = params[PITCH_PARAM].getValue() + params[FINE_PARAM].getValue() / 12.f + inputs[VOCT_INPUT].getVoltage();
 
         const float modKnob = params[MOD_PITCH_PARAM].getValue();
         p.ratioLock         = params[RATIO_LOCK_PARAM].getValue() > 0.5f;
-        if (p.ratioLock)
-            p.ratio = cosc::quantizeRatio(modKnob + inputs[MOD_VOCT_INPUT].getVoltage() * 0.1f);
-        else
-            p.modPitchV = modKnob * 11.f - 8.f + inputs[MOD_VOCT_INPUT].getVoltage();
+        if (p.ratioLock) p.ratio = cosc::quantizeRatio(modKnob + inputs[MOD_VOCT_INPUT].getVoltage() * 0.1f);
+        else p.modPitchV = modKnob * 11.f - 8.f + inputs[MOD_VOCT_INPUT].getVoltage();
 
-        p.fmIndex = params[FM_INDEX_PARAM].getValue() +
-                    params[FM_CV_ATTEN_PARAM].getValue() * inputs[FM_INDEX_INPUT].getVoltage() / 5.f;
-        p.timbre = params[TIMBRE_PARAM].getValue() +
-                   params[TIMBRE_CV_ATTEN_PARAM].getValue() * inputs[TIMBRE_INPUT].getVoltage() / 5.f;
+        p.fmIndex   = params[FM_INDEX_PARAM].getValue() + params[FM_CV_ATTEN_PARAM].getValue() * inputs[FM_INDEX_INPUT].getVoltage() / 5.f;
+        p.timbre    = params[TIMBRE_PARAM].getValue() + params[TIMBRE_CV_ATTEN_PARAM].getValue() * inputs[TIMBRE_INPUT].getVoltage() / 5.f;
         p.symmetry  = params[SYMMETRY_PARAM].getValue() + inputs[SYMMETRY_INPUT].getVoltage() / 5.f;
         p.amDepth   = params[AM_PARAM].getValue() + inputs[AM_INPUT].getVoltage() / 10.f;
         p.timbreMod = params[TIMBRE_MOD_PARAM].getValue();
-        p.feedback  = params[FEEDBACK_PARAM].getValue() +
-                     params[FEEDBACK_CV_ATTEN_PARAM].getValue() * inputs[FEEDBACK_INPUT].getVoltage() / 5.f;
-        p.chaos = params[CHAOS_PARAM].getValue() +
-                  params[CHAOS_CV_ATTEN_PARAM].getValue() * inputs[CHAOS_INPUT].getVoltage() / 5.f;
+        p.feedback  = params[FEEDBACK_PARAM].getValue() + params[FEEDBACK_CV_ATTEN_PARAM].getValue() * inputs[FEEDBACK_INPUT].getVoltage() / 5.f;
+        p.chaos     = params[CHAOS_PARAM].getValue() + params[CHAOS_CV_ATTEN_PARAM].getValue() * inputs[CHAOS_INPUT].getVoltage() / 5.f;
         p.modShape  = static_cast<cosc::ModShape>(static_cast<int>(params[MOD_SHAPE_PARAM].getValue()));
         osc.setParams(p);
     }

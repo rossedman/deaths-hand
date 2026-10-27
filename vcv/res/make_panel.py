@@ -9,6 +9,7 @@ is converted to outlines with matplotlib's TextPath. Dimensions are real
 Eurorack (3U = 128.5 mm, 1 HP = 5.08 mm), so this is also a starting point for
 a physical front panel.
 """
+
 import math
 import random
 from pathlib import Path
@@ -102,8 +103,7 @@ def polar(cx, cy, r, deg):
 def s_eye(cx, cy, r, color=BONE):
     d = f"M{f(cx - r)},{f(cy)} Q{f(cx)},{f(cy - r * 1.05)} {f(cx + r)},{f(cy)} Q{f(cx)},{f(cy + r * 1.05)} {f(cx - r)},{f(cy)} Z"
     return [stroke(d, color), dot(cx, cy, r * 0.32, color)] + [
-        poly([polar(cx, cy - r * 0.55, r * 0.35, a), polar(cx, cy - r * 0.55, r * 0.75, a)], color=color, w=SW * 0.8)
-        for a in (-35, 0, 35)
+        poly([polar(cx, cy - r * 0.55, r * 0.35, a), polar(cx, cy - r * 0.55, r * 0.75, a)], color=color, w=SW * 0.8) for a in (-35, 0, 35)
     ]
 
 
@@ -119,8 +119,13 @@ def s_vesica(cx, cy, r, color=BONE):
 
 def s_trident(cx, cy, r, color=BONE):
     out = [poly([(cx, cy + r), (cx, cy - r)], color=color)]
-    out.append(stroke(f"M{f(cx - r * 0.7)},{f(cy - r * 0.9)} Q{f(cx - r * 0.7)},{f(cy - r * 0.15)} {f(cx)},{f(cy - r * 0.15)} "
-                      f"Q{f(cx + r * 0.7)},{f(cy - r * 0.15)} {f(cx + r * 0.7)},{f(cy - r * 0.9)}", color))
+    out.append(
+        stroke(
+            f"M{f(cx - r * 0.7)},{f(cy - r * 0.9)} Q{f(cx - r * 0.7)},{f(cy - r * 0.15)} {f(cx)},{f(cy - r * 0.15)} "
+            f"Q{f(cx + r * 0.7)},{f(cy - r * 0.15)} {f(cx + r * 0.7)},{f(cy - r * 0.9)}",
+            color,
+        )
+    )
     for x in (cx - r * 0.7, cx, cx + r * 0.7):  # barbed tips
         out.append(poly([(x - r * 0.18, cy - r * 0.72), (x, cy - r * 1.0), (x + r * 0.18, cy - r * 0.72)], color=color, w=SW * 0.9))
     out.append(poly([(cx - r * 0.3, cy + r * 0.55), (cx + r * 0.3, cy + r * 0.55)], color=color, w=SW * 0.9))
@@ -146,15 +151,19 @@ def s_hourglass(cx, cy, r, color=BONE):
 
 def s_crossed_ring(cx, cy, r, color=BONE):
     k = r * 0.62
-    return [circle(cx, cy, r * 0.88, color), poly([(cx - k, cy - k), (cx + k, cy + k)], color=color),
-            poly([(cx + k, cy - k), (cx - k, cy + k)], color=color)]
+    return [circle(cx, cy, r * 0.88, color), poly([(cx - k, cy - k), (cx + k, cy + k)], color=color), poly([(cx + k, cy - k), (cx - k, cy + k)], color=color)]
 
 
 def s_serpent(cx, cy, r, color=BONE):
-    d = (f"M{f(cx - r * 0.9)},{f(cy + r * 0.75)} C{f(cx - r * 0.2)},{f(cy + r * 1.1)} {f(cx + r * 0.9)},{f(cy + r * 0.4)} {f(cx)},{f(cy)} "
-         f"S{f(cx - r * 0.6)},{f(cy - r * 0.9)} {f(cx + r * 0.65)},{f(cy - r * 0.75)}")
-    return [stroke(d, color), dot(cx + r * 0.72, cy - r * 0.78, r * 0.17, color),
-            poly([(cx + r * 0.86, cy - r * 0.8), (cx + r * 1.1, cy - r * 0.95)], color=color, w=SW * 0.7)]
+    d = (
+        f"M{f(cx - r * 0.9)},{f(cy + r * 0.75)} C{f(cx - r * 0.2)},{f(cy + r * 1.1)} {f(cx + r * 0.9)},{f(cy + r * 0.4)} {f(cx)},{f(cy)} "
+        f"S{f(cx - r * 0.6)},{f(cy - r * 0.9)} {f(cx + r * 0.65)},{f(cy - r * 0.75)}"
+    )
+    return [
+        stroke(d, color),
+        dot(cx + r * 0.72, cy - r * 0.78, r * 0.17, color),
+        poly([(cx + r * 0.86, cy - r * 0.8), (cx + r * 1.1, cy - r * 0.95)], color=color, w=SW * 0.7),
+    ]
 
 
 def s_ouroboros(cx, cy, r, color=BONE):
@@ -177,8 +186,8 @@ def s_chaos_star(cx, cy, r, color=BONE):
         x0, y0 = polar(cx, cy, r * 0.3, a)
         x1, y1 = polar(cx, cy, r, a)
         out.append(poly([(x0, y0), (x1, y1)], color=color))
-        l, rr2 = polar(cx, cy, r * 0.72, a - 14), polar(cx, cy, r * 0.72, a + 14)
-        out.append(poly([l, (x1, y1), rr2], color=color, w=SW * 0.85))
+        lft, rgt = polar(cx, cy, r * 0.72, a - 14), polar(cx, cy, r * 0.72, a + 14)
+        out.append(poly([lft, (x1, y1), rgt], color=color, w=SW * 0.85))
     return out
 
 
@@ -210,15 +219,16 @@ def s_pillars(cx, cy, r, color=BONE):
     return [
         poly([(cx - r * 0.75, cy - r), (cx - r * 0.75, cy + r)], color=color),
         poly([(cx + r * 0.75, cy - r), (cx + r * 0.75, cy + r)], color=color),
-        poly([(cx + r * 0.3, cy - r * 0.85), (cx - r * 0.25, cy + r * 0.05), (cx + r * 0.25, cy - r * 0.05), (cx - r * 0.3, cy + r * 0.85)],
-             color=color),
+        poly([(cx + r * 0.3, cy - r * 0.85), (cx - r * 0.25, cy + r * 0.05), (cx + r * 0.25, cy - r * 0.05), (cx - r * 0.3, cy + r * 0.85)], color=color),
     ]
 
 
 def drop_path(cx, cy, r):
-    return (f"M{f(cx)},{f(cy - r * 1.1)} C{f(cx + r * 0.25)},{f(cy - r * 0.5)} {f(cx + r * 0.85)},{f(cy)} {f(cx + r * 0.7)},{f(cy + r * 0.45)} "
-            f"A{f(r * 0.72)},{f(r * 0.72)} 0 1 1 {f(cx - r * 0.7)},{f(cy + r * 0.45)} "
-            f"C{f(cx - r * 0.85)},{f(cy)} {f(cx - r * 0.25)},{f(cy - r * 0.5)} {f(cx)},{f(cy - r * 1.1)} Z")
+    return (
+        f"M{f(cx)},{f(cy - r * 1.1)} C{f(cx + r * 0.25)},{f(cy - r * 0.5)} {f(cx + r * 0.85)},{f(cy)} {f(cx + r * 0.7)},{f(cy + r * 0.45)} "
+        f"A{f(r * 0.72)},{f(r * 0.72)} 0 1 1 {f(cx - r * 0.7)},{f(cy + r * 0.45)} "
+        f"C{f(cx - r * 0.85)},{f(cy)} {f(cx - r * 0.25)},{f(cy - r * 0.5)} {f(cx)},{f(cy - r * 1.1)} Z"
+    )
 
 
 def s_drop(cx, cy, r, color=BLOOD_HI):
@@ -226,8 +236,11 @@ def s_drop(cx, cy, r, color=BLOOD_HI):
 
 
 def s_vesica_drop(cx, cy, r, color=BLOOD_HI):
-    return [stroke(drop_path(cx, cy, r), color=color, w=SW),
-            circle(cx - r * 0.2, cy + r * 0.3, r * 0.32, color, w=SW * 0.8), circle(cx + r * 0.2, cy + r * 0.3, r * 0.32, color, w=SW * 0.8)]
+    return [
+        stroke(drop_path(cx, cy, r), color=color, w=SW),
+        circle(cx - r * 0.2, cy + r * 0.3, r * 0.32, color, w=SW * 0.8),
+        circle(cx + r * 0.2, cy + r * 0.3, r * 0.32, color, w=SW * 0.8),
+    ]
 
 
 SIGILS = {name[2:]: fn for name, fn in globals().items() if name.startswith("s_")}
@@ -254,18 +267,26 @@ def text_path(s, x, y, size, color, tracking=0.0):
         d, i, v, c = [], 0, tp.vertices, tp.codes
         if c is None or len(c) == 0:
             continue
-        pt = lambda k: f"{f(x - total / 2 + off + v[k][0])},{f(y - v[k][1])}"
+
+        def pt(k, off=off, v=v):
+            return f"{f(x - total / 2 + off + v[k][0])},{f(y - v[k][1])}"
+
         while i < len(c):
             if c[i] == MPath.MOVETO:
-                d.append("M" + pt(i)); i += 1
+                d.append("M" + pt(i))
+                i += 1
             elif c[i] == MPath.LINETO:
-                d.append("L" + pt(i)); i += 1
+                d.append("L" + pt(i))
+                i += 1
             elif c[i] == MPath.CURVE3:
-                d.append("Q" + pt(i) + " " + pt(i + 1)); i += 2
+                d.append("Q" + pt(i) + " " + pt(i + 1))
+                i += 2
             elif c[i] == MPath.CURVE4:
-                d.append("C" + pt(i) + " " + pt(i + 1) + " " + pt(i + 2)); i += 3
+                d.append("C" + pt(i) + " " + pt(i + 1) + " " + pt(i + 2))
+                i += 3
             elif c[i] == MPath.CLOSEPOLY:
-                d.append("Z"); i += 1
+                d.append("Z")
+                i += 1
             else:
                 i += 1
         out.append(f'<path d="{"".join(d)}" fill="{color}"/>')
@@ -294,8 +315,11 @@ def summoning_circle(cx, cy, r):
     for i in range(28):  # runes in the band between the two rings
         a = i * 360 / 28 + 6
         x, y = polar(cx, cy, r - 0.7, a)
-        out.append(f'<g transform="rotate({f(a)} {f(x)} {f(y)}) translate({f(x)} {f(y)}) scale(0.32) translate({f(-x)} {f(-y)})">'
-                   + "".join(rune(x, y, rng, color=CIRCLE, w=0.6)) + "</g>")
+        out.append(
+            f'<g transform="rotate({f(a)} {f(x)} {f(y)}) translate({f(x)} {f(y)}) scale(0.32) translate({f(-x)} {f(-y)})">'
+            + "".join(rune(x, y, rng, color=CIRCLE, w=0.6))
+            + "</g>"
+        )
     return out
 
 
@@ -319,8 +343,14 @@ def drips(x0, x1, y, rng, keep_clear=()):
             continue
         ln = rng.uniform(1.0, 4.2)
         wd = rng.uniform(0.35, 0.6)
-        out.append(stroke(f"M{f(x - wd)},{f(y)} L{f(x - wd * 0.4)},{f(y + ln)} A{f(wd * 0.75)},{f(wd * 0.75)} 0 1 0 {f(x + wd * 0.4)},{f(y + ln)} L{f(x + wd)},{f(y)} Z",
-                          color=BLOOD, w=0.05, fill=BLOOD))
+        out.append(
+            stroke(
+                f"M{f(x - wd)},{f(y)} L{f(x - wd * 0.4)},{f(y + ln)} A{f(wd * 0.75)},{f(wd * 0.75)} 0 1 0 {f(x + wd * 0.4)},{f(y + ln)} L{f(x + wd)},{f(y)} Z",
+                color=BLOOD,
+                w=0.05,
+                fill=BLOOD,
+            )
+        )
         x += rng.uniform(2.2, 4.5)
     return out
 
@@ -391,7 +421,7 @@ def header():
         "namespace panel {",
         "struct Pos { float x, y; }; // millimetres from the top-left",
     ]
-    for kind, name, x, y, _ in CONTROLS:
+    for _kind, name, x, y, _ in CONTROLS:
         lines.append(f"constexpr Pos {name} = {{{x:.2f}f, {y:.2f}f}};")
     lines.append("} // namespace panel")
     return "\n".join(lines) + "\n"

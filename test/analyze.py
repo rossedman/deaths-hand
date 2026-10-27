@@ -4,6 +4,7 @@
 usage: python3 analyze.py out/
 Writes out/aliasing.png and prints how much non-harmonic energy each render has.
 """
+
 import sys
 from pathlib import Path
 

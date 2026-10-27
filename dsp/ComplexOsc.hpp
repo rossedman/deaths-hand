@@ -24,25 +24,25 @@
 namespace cosc {
 
 struct Params {
-    float    pitchV    = 0.f;   // primary pitch, 1V/oct, 0 V = C4
-    float    modPitchV = 0.f;   // modulator pitch when ratioLock == false
-    bool     ratioLock = true;  // true: modulator = primary * ratio (harmonic FM)
-    float    ratio     = 1.f;   // modulator/primary frequency ratio
-    float    fmIndex   = 0.f;   // 0..1 -> 0..kMaxFmIndex
-    float    amDepth   = 0.f;   // 0 = none, 0.5 = classic AM, 1 = ring mod
-    float    timbre    = 0.f;   // 0..1 wavefold amount
-    float    symmetry  = 0.f;   // -1..1 folder bias (even harmonics)
-    float    timbreMod = 0.f;   // 0..1 modulator -> timbre depth
-    float    feedback  = 0.f;   // 0..1 primary self-feedback (sine -> saw-ish -> noise)
-    float    chaos     = 0.f;   // 0..1 primary -> modulator cross-FM
+    float    pitchV    = 0.f;  // primary pitch, 1V/oct, 0 V = C4
+    float    modPitchV = 0.f;  // modulator pitch when ratioLock == false
+    bool     ratioLock = true; // true: modulator = primary * ratio (harmonic FM)
+    float    ratio     = 1.f;  // modulator/primary frequency ratio
+    float    fmIndex   = 0.f;  // 0..1 -> 0..kMaxFmIndex
+    float    amDepth   = 0.f;  // 0 = none, 0.5 = classic AM, 1 = ring mod
+    float    timbre    = 0.f;  // 0..1 wavefold amount
+    float    symmetry  = 0.f;  // -1..1 folder bias (even harmonics)
+    float    timbreMod = 0.f;  // 0..1 modulator -> timbre depth
+    float    feedback  = 0.f;  // 0..1 primary self-feedback (sine -> saw-ish -> noise)
+    float    chaos     = 0.f;  // 0..1 primary -> modulator cross-FM
     ModShape modShape  = ModShape::Sine;
 };
 
 template <int Oversample = 4, int DecimTaps = 129>
 class ComplexOsc {
   public:
-    static constexpr float kMaxFmIndex = 8.f;   // peak deviation = index * carrier freq
-    static constexpr float kOutVolts   = 5.f;   // +-5 V, Eurorack audio standard
+    static constexpr float kMaxFmIndex = 8.f; // peak deviation = index * carrier freq
+    static constexpr float kOutVolts   = 5.f; // +-5 V, Eurorack audio standard
     static constexpr float kMaxHz      = 20000.f;
     // Self-feedback depth in turns of phase. ~0.2 gives a saw-like spectrum,
     // the top of the range tips into noise. Knob is squared for finer control.
@@ -61,16 +61,15 @@ class ComplexOsc {
         sync();
         smPitch_.setTime(0.001f, fs_);
         smModPitch_.setTime(0.001f, fs_);
-        for (Smoother* s : {&smIndex_, &smAm_, &smTimbre_, &smSym_, &smTmod_, &smRatio_, &smFb_, &smChaos_})
-            s->setTime(0.01f, fs_);
+        for (Smoother* s : {&smIndex_, &smAm_, &smTimbre_, &smSym_, &smTmod_, &smRatio_, &smFb_, &smChaos_}) s->setTime(0.01f, fs_);
         setParams(Params{});
         snapSmoothers();
     }
 
     // Set target values; call once per block (or per sample — it's cheap).
     void setParams(const Params& p) {
-        p_              = p;
-        mod_.shape      = p.modShape;
+        p_         = p;
+        mod_.shape = p.modShape;
     }
 
     // Jump smoothers to their targets (on init / patch recall) instead of gliding.
@@ -113,9 +112,9 @@ class ComplexOsc {
         const float fc = clampf(voltsToHz(pitchV), 0.05f, kMaxHz);
         const float fm = clampf(p_.ratioLock ? fc * ratio : voltsToHz(modV), 0.01f, kMaxHz);
 
-        const float incC = fc / fsInt_;
-        const float incM = fm / fsInt_;
-        const float ext  = extFmVolts * (1.f / kOutVolts);
+        const float incC   = fc / fsInt_;
+        const float incM   = fm / fsInt_;
+        const float ext    = extFmVolts * (1.f / kOutVolts);
         const float maxInc = kMaxHz / fsInt_;
 
         float yP = 0.f, yM = 0.f;
@@ -159,10 +158,10 @@ class ComplexOsc {
     Params p_;
     float  fs_ = 48000.f, fsInt_ = 48000.f * Oversample;
 
-    Phasor        primary_;
-    ModOscillator mod_;
-    Folder        folder_;
-    DcBlocker     dc_;
+    Phasor                           primary_;
+    ModOscillator                    mod_;
+    Folder                           folder_;
+    DcBlocker                        dc_;
     Decimator<Oversample, DecimTaps> decPrimary_, decMod_;
 
     Smoother smPitch_, smModPitch_, smIndex_, smAm_, smTimbre_, smSym_, smTmod_, smRatio_, smFb_, smChaos_;
@@ -170,8 +169,8 @@ class ComplexOsc {
 };
 
 // Musically useful FM ratios for a quantized "ratio" knob (harmonic spectra).
-constexpr float kRatios[]   = {0.25f, 0.5f, 1.f, 1.5f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f};
-constexpr int   kNumRatios  = sizeof(kRatios) / sizeof(kRatios[0]);
+constexpr float kRatios[]  = {0.25f, 0.5f, 1.f, 1.5f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f};
+constexpr int   kNumRatios = sizeof(kRatios) / sizeof(kRatios[0]);
 
 inline float quantizeRatio(float knob01) {
     int i = static_cast<int>(clampf(knob01, 0.f, 0.9999f) * kNumRatios);
