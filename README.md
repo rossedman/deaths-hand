@@ -95,7 +95,7 @@ live in `dsp/Macros.hpp`.
 | Alias energy, FM index 1.0 @ C7 | −40 dB → **−84 dB** with 4× |
 | Self-feedback 0 → 0.5 → 1 | pure sine (H2 −117 dB) → saw-like (H2 −10 dB) → noisy |
 | 60 s worst-case evil (fb, chaos, Lorenz, all max) | finite, alive, no DC lock-up, at 4 pitches |
-| Output range | ±5 V nominal, DC-free, peaks up to ~7.3 V with heavy feedback/chaos |
+| Output range | ±5 V nominal, DC-free; heavy feedback/chaos peaks are soft-capped at 7.2 V |
 | FLESH 0 → 1: spectral centroid | 220 Hz → 6.8 kHz, rising at every step |
 | MALICE: inharmonic share at 0.5 / 0.8 / 0.9 | 0.00 / 0.97 / 1.00 |
 | LEGION 0.4 → 1: beating | 2.8× → 4.8× |

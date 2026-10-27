@@ -48,6 +48,8 @@ class ComplexOsc {
     static constexpr float kMaxFmIndex = 8.f; // peak deviation = index * carrier freq
     static constexpr float kOutVolts   = 5.f; // +-5 V, Eurorack audio standard
     static constexpr float kMaxHz      = 20000.f;
+    static constexpr float kCeilKnee   = 6.5f / kOutVolts; // output soft ceiling: identity below 6.5 V
+    static constexpr float kCeilMax    = 7.2f / kOutVolts; // and never above 7.2 V
     // Self-feedback depth in turns of phase. ~0.2 gives a saw-like spectrum,
     // the top of the range tips into noise. Knob is squared for finer control.
     static constexpr float kMaxFeedback = 0.42f;
@@ -221,8 +223,12 @@ class ComplexOsc {
             if (decMod_.push(m, o)) yM = o;
         }
 
-        primaryOutV = dc_.process(yP) * kOutVolts; // residual DC from FM / timbre mod
-        modOutV     = yM * kOutVolts;
+        // The limiter above sits before the decimator and the DC blocker, so their
+        // overshoot can still push a pathological signal past it. A soft ceiling on
+        // the final volts makes the +-7.5 V budget hold on every compiler: it is
+        // the identity below 6.5 V and never exceeds 7.2 V.
+        primaryOutV = softLimit(dc_.process(yP), kCeilKnee, kCeilMax) * kOutVolts; // residual DC from FM / timbre mod
+        modOutV     = softLimit(yM, kCeilKnee, kCeilMax) * kOutVolts;
     }
 
     float sampleRate() const { return fs_; }
