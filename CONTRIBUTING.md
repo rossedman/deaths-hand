@@ -21,7 +21,7 @@ Building the other targets needs more:
 | patch.Init firmware | [Arm GNU toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) (`arm-none-eabi-gcc`), the `lib/libDaisy` submodule | `make firmware` |
 | VCV Rack plugin | the [Rack 2 SDK](https://vcvrack.com/downloads/) (`scripts/fetch-rack-sdk.sh ../Rack-SDK <platform>` downloads and verifies it), `jq`, `zstd` | `make vcv RACK_DIR=../Rack-SDK` |
 | Spectrograms | nothing extra (uv fetches numpy, scipy, matplotlib) | `make analyze` |
-| Docs site | nothing extra (uv fetches MkDocs) | `make docs-serve` |
+| Docs site | a C++17 compiler (the listening page's audio is rendered from the DSP); uv fetches MkDocs and the encoder | `make docs-serve` |
 | Banner, social card, diagram | Chrome or Chromium (fonts are vendored) | `docs/assets/render.sh` |
 
 ## Check your work
@@ -44,7 +44,11 @@ CI also builds the firmware and the VCV plugin on every pull request.
 - **Test the sound.** A DSP change comes with a host test that would have caught the bug, or a check that pins the new behaviour. Name measured numbers in the README only when the tests print them.
 - **The panel is generated.** Edit the table in `vcv/res/make_panel.py` and run `make panel`; never hand-edit `ComplexOsc.svg` or `PanelLayout.hpp`.
 - **Watch the budget.** The patch.Init build must fit its 128 KB of flash and run at 48 kHz in real time. If you add cost to the audio path, measure it with `make -C hw CPU_METER=1`.
-- **Record user-facing changes** in `CHANGELOG.md` under "Unreleased".
+- **Record user-facing changes** in `CHANGELOG.md` under the upcoming version.
+
+## Versions
+
+The project version is in `VERSION` (semantic versioning, `0.x` while the panel and sound may still change), and a release is a `v<VERSION>` tag. `vcv/plugin.json` has its own version because VCV Rack 2 only loads plugins whose version starts with `2.`: bump its minor or patch number in a release that changes the plugin. The release workflow checks both.
 
 ## Commits and pull requests
 
