@@ -13,6 +13,7 @@ EXTRA_CXXFLAGS += -std=c++17
 SOURCES += $(wildcard src/*.cpp)
 
 DISTRIBUTABLES += res/ComplexOsc.svg
+DISTRIBUTABLES += res/Doombringer.svg
 DISTRIBUTABLES += LICENSE
 
 include $(RACK_DIR)/plugin.mk

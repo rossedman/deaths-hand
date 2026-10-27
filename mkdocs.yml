@@ -2,7 +2,7 @@
 # Published to GitHub Pages by .github/workflows/docs.yml.
 # Preview locally: make docs-serve
 site_name: Death's Hand
-site_description: An evil complex oscillator for patch.Init and VCV Rack. Two oscillators. One will. No mercy.
+site_description: An evil complex oscillator and a ladder filter that summons what isn't there, for patch.Init and VCV Rack. Two oscillators. One will. No mercy.
 site_url: https://rossedman.io/deaths-hand/
 repo_url: https://github.com/rossedman/deaths-hand
 repo_name: rossedman/deaths-hand
@@ -94,6 +94,7 @@ nav:
       - Reading the panel: panel.md
       - patch.Init control map: patch-init.md
       - VCV Rack: vcv-rack.md
+  - Doombringer: doombringer.md
   - Rituals:
       - Five evil patches: patches.md
       - Calibration: calibration.md

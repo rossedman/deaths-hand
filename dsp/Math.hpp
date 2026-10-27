@@ -75,15 +75,26 @@ struct DcBlocker {
     }
 };
 
+// tanh for x >= 0 as a Pade approximant that lands exactly on 1 at x = 3
+// with zero slope, so it is smooth everywhere and costs one divide.
+inline float fastTanhPos(float x) { return x > 3.f ? 1.f : x * (27.f + x * x) / (27.f + 9.f * x * x); }
+inline float fastTanh(float x) { return std::copysign(fastTanhPos(std::fabs(x)), x); }
+
+// tan(pi * f / fs), the bilinear prewarp of a cutoff. A [3/2] Pade
+// approximant: 7e-7 relative error at 20 kHz / 192 kHz, 8e-4 at 0.3 fs.
+inline float prewarp(float hz, float fs) {
+    const float x  = kPi * hz / fs;
+    const float x2 = x * x;
+    return x * (15.f - x2) / (15.f - 6.f * x2);
+}
+
 // Transparent below |x| = knee, then bends smoothly toward +-ceiling.
 // Run it at the oversampled rate so the bend itself doesn't alias.
 inline float softLimit(float x, float knee = 1.0f, float ceiling = 1.2f) {
     float a = std::fabs(x);
     if (a <= knee) return x;
     float w = ceiling - knee;
-    float u = (a - knee) / w;
-    u       = u > 3.f ? 1.f : u * (27.f + u * u) / (27.f + 9.f * u * u); // fast tanh
-    return std::copysign(knee + w * u, x);
+    return std::copysign(knee + w * fastTanhPos((a - knee) / w), x);
 }
 
 } // namespace cosc

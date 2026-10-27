@@ -1,12 +1,22 @@
 # patch.Init() firmware. Requires the ARM toolchain (arm-none-eabi-gcc) and
 # libDaisy checked out at ../lib/libDaisy (git submodule, see README).
+# Two programs share this directory; APP picks one.
 #
-#   make -C lib/libDaisy        # once
-#   make -C hw                  # build
-#   make -C hw program-dfu      # flash over USB (hold BOOT, tap RESET first)
+#   make -C lib/libDaisy                     # once
+#   make -C hw                               # Death's Hand -> build/deaths-hand.bin
+#   make -C hw APP=doombringer               # Doombringer  -> build/doombringer.bin
+#   make -C hw APP=doombringer program-dfu   # flash over USB (hold BOOT, tap RESET first)
 
-TARGET        = deaths-hand
-CPP_SOURCES   = main.cpp
+APP ?= deaths-hand
+ifeq ($(APP),deaths-hand)
+CPP_SOURCES = main.cpp
+else ifeq ($(APP),doombringer)
+CPP_SOURCES = doombringer.cpp
+else
+$(error APP must be deaths-hand or doombringer, not $(APP))
+endif
+
+TARGET        = $(APP)
 CPP_STANDARD  = -std=gnu++17
 OPT           = -O2
 

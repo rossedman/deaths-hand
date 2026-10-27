@@ -2,6 +2,22 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## 0.2.0
+
+The VCV plugin is version `2.1.0`.
+
+### Added
+
+- **Doombringer**, a four-pole ladder filter, as a second VCV module in the same plugin and a second patch.Init program (`doombringer.bin`), built from the same DSP core style. The loop is solved with no unit delay, so it self-oscillates in tune (0.06 cents from 33 Hz to 8 kHz) at the same level in every mode, and a morph knob moves through LP4, LP2, BP, HP2 and HP4.
+- Doombringer's three macros: WRATH (resonance, then drive), RUIN (the feedback folds, the output's level bends the cutoff, then the loop is pushed past the resonance knob) and DOOM (undertones an octave and two below the input, then a lurch of the cutoff). HUNGER feeds the input's envelope to the cutoff, and PING strikes the filter at its cutoff.
+- A host test suite for Doombringer (`test/doom_tests.cpp`), five documented patches and three macro sweeps, rendered on the listening page.
+- A polyphase interpolator next to the decimator in `dsp/Decimator.hpp`, so a processor can upsample its input.
+
+### Changed
+
+- `make firmware` builds both programs; `make -C hw APP=doombringer` builds the filter alone.
+- `make panel` generates both panels and both layout headers, and `make panel-check` checks both.
+
 ## 0.1.1
 
 ### Fixed

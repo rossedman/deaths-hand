@@ -41,4 +41,4 @@ sha256sum --ignore-missing -c SHA256SUMS
 gh attestation verify deaths-hand.bin --repo rossedman/deaths-hand
 ```
 
-Use the same commands for the `.vcvplugin` file and its `.sigstore.json` bundle.
+Use the same commands for `doombringer.bin`, the `.vcvplugin` file and their `.sigstore.json` bundles.

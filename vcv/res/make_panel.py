@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Generates the DEATH'S HAND panel SVG and a matching C++ layout header from one table.
+"""Generates both panels, DEATH'S HAND and DOOMBRINGER, and a matching C++ layout header for each, from one table per module.
 
-    python3 res/make_panel.py          # writes res/ComplexOsc.svg, res/panel-preview.svg + src/PanelLayout.hpp
+    python3 res/make_panel.py   # writes res/ComplexOsc.svg, res/panel-preview.svg, src/PanelLayout.hpp,
+                                # res/Doombringer.svg, res/doombringer-preview.svg and src/DoombringerLayout.hpp
 
 Every control is marked with a sigil instead of a word; the README has the
 decoder. Rack's SVG renderer ignores <text>, so the only lettering (the title)
@@ -31,7 +32,7 @@ BLOOD_DARK = "#2a0608"
 CIRCLE = "#2b0b0e"  # the faint summoning circle behind the controls
 
 # (kind, enum name, x, y, sigil)
-#   kind: knob_l, knob_m, trim, snap, snap4, switch, in, out
+#   kind: knob_l, knob_m, trim, snap, snap4, switch, button, light, in, out
 # The layout mirrors the patch.Init: pitch and the three character macros on
 # top, the shift-layer settings below, then the jacks.
 CONTROLS = [
@@ -57,10 +58,39 @@ CONTROLS = [
     ("out", "PRIMARY_OUTPUT", COLS[3], 117, "drop"),
 ]
 
+# Doombringer mirrors its patch.Init the same way: the cutoff and three macros
+# on top, the shift layer below, then the jacks. A sigil that also appears on
+# Death's Hand means the same thing here (spiral = FM, slit eye = fine,
+# pillars = restart, solid drop = the main output).
+DOOM_CONTROLS = [
+    ("knob_l", "CUTOFF_PARAM", COLS[0], 27, "eclipse"),
+    ("knob_l", "WRATH_PARAM", COLS[1], 27, "flame"),
+    ("knob_l", "RUIN_PARAM", COLS[2], 27, "cracked"),
+    ("knob_l", "DOOM_PARAM", COLS[3], 27, "chevrons"),
+    ("knob_m", "MORPH_PARAM", COLS[0], 50, "serpent"),
+    ("knob_m", "FM_PARAM", COLS[1], 50, "spiral"),
+    ("knob_m", "HUNGER_PARAM", COLS[2], 50, "maw"),
+    ("knob_m", "FINE_PARAM", COLS[3], 50, "slit_eye"),
+    ("switch", "BASS_COMP_PARAM", COLS[0], 68, "trident"),
+    ("light", "ENV_LIGHT", (COLS[1] + COLS[2]) / 2, 68, "maw"),
+    ("button", "PING_PARAM", COLS[3], 68, "bolt"),
+    ("in", "CUTOFF_INPUT", COLS[0], 89, "eclipse"),
+    ("in", "WRATH_INPUT", COLS[1], 89, "flame"),
+    ("in", "RUIN_INPUT", COLS[2], 89, "cracked"),
+    ("in", "DOOM_INPUT", COLS[3], 89, "chevrons"),
+    ("in", "AUDIO_INPUT", COLS[0], 103, "chalice"),
+    ("in", "FM_INPUT", COLS[1], 103, "spiral"),
+    ("in", "PING_INPUT", COLS[2], 103, "bolt"),
+    ("in", "RESET_INPUT", COLS[3], 103, "pillars"),
+    ("out", "ENV_OUTPUT", COLS[1], 117, "maw"),
+    ("out", "LP4_OUTPUT", COLS[2], 117, "four_drop"),
+    ("out", "MAIN_OUTPUT", COLS[3], 117, "drop"),
+]
+
 # Where each control's sigil sits (offset above the control) and how big it is.
-SIGIL_DY = {"knob_l": -9.4, "knob_m": -7.6, "trim": -5.4, "snap": -7.8, "snap4": -7.8, "switch": -6.8, "in": -7.0, "out": -7.0}
-SIGIL_R = {"knob_l": 1.9, "knob_m": 1.7, "trim": 1.2, "snap": 1.7, "snap4": 1.7, "switch": 1.6, "in": 1.5, "out": 1.6}
-CONTROL_R = {"knob_l": 6.3, "knob_m": 4.8, "trim": 3.0, "snap": 4.8, "snap4": 4.8, "switch": 3.8, "in": 4.0, "out": 4.0}
+SIGIL_DY = {"knob_l": -9.4, "knob_m": -7.6, "trim": -5.4, "snap": -7.8, "snap4": -7.8, "switch": -6.8, "button": -6.6, "light": -4.4, "in": -7.0, "out": -7.0}
+SIGIL_R = {"knob_l": 1.9, "knob_m": 1.7, "trim": 1.2, "snap": 1.7, "snap4": 1.7, "switch": 1.6, "button": 1.5, "light": 1.2, "in": 1.5, "out": 1.6}
+CONTROL_R = {"knob_l": 6.3, "knob_m": 4.8, "trim": 3.0, "snap": 4.8, "snap4": 4.8, "switch": 3.8, "button": 3.2, "light": 1.6, "in": 4.0, "out": 4.0}
 
 SW = 0.3  # sigil stroke width (mm)
 
@@ -246,6 +276,100 @@ def s_vesica_drop(cx, cy, r, color=BLOOD_HI):
     ]
 
 
+# ---- Doombringer's sigils
+def s_eclipse(cx, cy, r, color=BONE):
+    """The cutoff: a light with a crescent of shadow eating into it."""
+    rr = r * 0.9
+    d = f"M{f(cx)},{f(cy - rr)} A{f(rr)},{f(rr)} 0 0 0 {f(cx)},{f(cy + rr)} A{f(rr * 1.3)},{f(rr * 1.3)} 0 0 1 {f(cx)},{f(cy - rr)} Z"
+    return [circle(cx, cy, rr, color), stroke(d, color, w=0.05, fill=color)]
+
+
+def s_flame(cx, cy, r, color=BONE):
+    outer = (
+        f"M{f(cx)},{f(cy - r)} C{f(cx + r * 0.15)},{f(cy - r * 0.45)} {f(cx + r * 0.85)},{f(cy - r * 0.2)} {f(cx + r * 0.7)},{f(cy + r * 0.4)} "
+        f"A{f(r * 0.72)},{f(r * 0.72)} 0 0 1 {f(cx - r * 0.7)},{f(cy + r * 0.4)} "
+        f"C{f(cx - r * 0.8)},{f(cy)} {f(cx - r * 0.4)},{f(cy - r * 0.2)} {f(cx - r * 0.25)},{f(cy - r * 0.55)} "
+        f"C{f(cx - r * 0.1)},{f(cy - r * 0.3)} {f(cx)},{f(cy - r * 0.6)} {f(cx)},{f(cy - r)} Z"
+    )
+    inner = (
+        f"M{f(cx)},{f(cy - r * 0.1)} C{f(cx + r * 0.35)},{f(cy + r * 0.2)} {f(cx + r * 0.3)},{f(cy + r * 0.6)} {f(cx)},{f(cy + r * 0.65)} "
+        f"C{f(cx - r * 0.3)},{f(cy + r * 0.6)} {f(cx - r * 0.3)},{f(cy + r * 0.25)} {f(cx)},{f(cy - r * 0.1)} Z"
+    )
+    return [stroke(outer, color), stroke(inner, color, w=0.05, fill=color)]
+
+
+def s_cracked(cx, cy, r, color=BONE):
+    """RUIN: a broken ring with a crack through it."""
+    rr = r * 0.88
+
+    def arc(a0, a1):
+        x0, y0 = polar(cx, cy, rr, a0)
+        x1, y1 = polar(cx, cy, rr, a1)
+        return stroke(f"M{f(x0)},{f(y0)} A{f(rr)},{f(rr)} 0 {1 if a1 - a0 > 180 else 0} 1 {f(x1)},{f(y1)}", color)
+
+    crack = [polar(cx, cy, rr * 1.12, 30)]
+    for i, t in enumerate((0.75, 0.5, 0.25, 0.0, -0.25, -0.5, -0.75)):
+        x, y = polar(cx, cy, rr * t, 30)
+        dx, dy = polar(0, 0, rr * 0.16 * (1 if i % 2 else -1), 120)
+        crack.append((x + dx, y + dy))
+    crack.append(polar(cx, cy, rr * 1.12, 210))
+    return [arc(50, 190), arc(230, 370), poly(crack, color=color, w=SW * 0.9)]
+
+
+def s_chevrons(cx, cy, r, color=BONE):
+    """DOOM: three chevrons falling, each smaller: an octave down, and another."""
+    out = []
+    for y, w in ((-0.8, 1.0), (-0.1, 0.72), (0.5, 0.46)):
+        yy = cy + y * r
+        out.append(poly([(cx - w * r, yy - 0.3 * w * r), (cx, yy + 0.3 * w * r), (cx + w * r, yy - 0.3 * w * r)], color=color))
+    out.append(dot(cx, cy + r * 1.0, r * 0.11, color))
+    return out
+
+
+def s_maw(cx, cy, r, color=BONE):
+    """HUNGER: open jaws with teeth. On the envelope output it's the same mouth, in red."""
+    out = []
+    for side in (-1, 1):  # -1 upper jaw (teeth down), 1 lower jaw (teeth up)
+        base = cy + side * r * 0.14
+        pts = [(cx + r, base)]
+        for i in range(5):
+            x0 = cx + r * (0.8 - i * 0.4)
+            pts += [(x0 - r * 0.2, base - side * r * 0.32), (x0 - r * 0.4, base)]
+        d = f"M{f(cx - r)},{f(base)} Q{f(cx)},{f(base + side * r * 1.15)} {f(cx + r)},{f(base)}"
+        out.append(stroke(d, color))
+        out.append(poly(pts, color=color, w=SW * 0.8))
+    return out
+
+
+def s_chalice(cx, cy, r, color=BONE):
+    """The audio input: a cup to pour the sound into."""
+    cup = (
+        f"M{f(cx - r * 0.75)},{f(cy - r * 0.75)} Q{f(cx - r * 0.7)},{f(cy + r * 0.1)} {f(cx)},{f(cy + r * 0.12)} "
+        f"Q{f(cx + r * 0.7)},{f(cy + r * 0.1)} {f(cx + r * 0.75)},{f(cy - r * 0.75)}"
+    )
+    return [
+        stroke(cup, color),
+        poly([(cx - r * 0.75, cy - r * 0.75), (cx + r * 0.75, cy - r * 0.75)], color=color),
+        poly([(cx, cy + r * 0.12), (cx, cy + r * 0.8)], color=color),
+        poly([(cx - r * 0.45, cy + r * 0.9), (cx + r * 0.45, cy + r * 0.9)], color=color),
+    ]
+
+
+def s_bolt(cx, cy, r, color=BONE):
+    """PING: a strike."""
+    pts = [(0.3, -1), (-0.45, 0.12), (0.02, 0.12), (-0.3, 1), (0.45, -0.12), (-0.02, -0.12)]
+    pts = [(cx + r * x, cy + r * y) for x, y in pts]
+    return [poly(pts, closed=True, color=color, w=0.1, fill=color)]
+
+
+def s_four_drop(cx, cy, r, color=BLOOD_HI):
+    """The four-pole output: a drop holding four poles."""
+    out = [stroke(drop_path(cx, cy, r), color=color, w=SW)]
+    for x in (-0.36, -0.12, 0.12, 0.36):
+        out.append(dot(cx + x * r, cy + r * 0.42, r * 0.09, color))
+    return out
+
+
 SIGILS = {name[2:]: fn for name, fn in globals().items() if name.startswith("s_")}
 
 
@@ -384,8 +508,39 @@ def hand_mark(cx, cy, size):
 
 
 # ----------------------------------------------------------------- panel
-def svg():
-    rng = random.Random(666)
+# Each module is one spec: its table, its title and where the decoration goes.
+DEATHS_HAND = {
+    "title": "DEATH'S HAND",
+    "flank": "chaos_star",
+    "controls": CONTROLS,
+    "seed": 666,
+    "mark_x": (COLS[0] + COLS[1]) / 2,  # the mark sits left of the altar
+    "altar": (COLS[2], COLS[3]),
+    # Where each control sits at its default (0..1 of the 300 degree sweep), for the preview.
+    "defaults": {"PITCH_PARAM": 0.5, "RATIO_PARAM": 2.5 / 11, "SYMMETRY_PARAM": 0.5, "FINE_PARAM": 0.5},
+    "svg": "ComplexOsc.svg",
+    "preview": "panel-preview.svg",
+    "header": "PanelLayout.hpp",
+    "namespace": "panel",
+}
+DOOMBRINGER = {
+    "title": "DOOMBRINGER",
+    "flank": "chevrons",
+    "controls": DOOM_CONTROLS,
+    "seed": 1666,
+    "mark_x": COLS[0],
+    "altar": (COLS[1], COLS[3]),
+    "defaults": {"CUTOFF_PARAM": 0.6, "FM_PARAM": 0.5, "HUNGER_PARAM": 0.5, "FINE_PARAM": 0.5},
+    "svg": "Doombringer.svg",
+    "preview": "doombringer-preview.svg",
+    "header": "DoombringerLayout.hpp",
+    "namespace": "doompanel",
+}
+PANELS = [DEATHS_HAND, DOOMBRINGER]
+
+
+def svg(spec):
+    rng = random.Random(spec["seed"])
     out = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{f(W)}mm" height="{H}mm" viewBox="0 0 {f(W)} {H}">',
         f'<rect width="{f(W)}" height="{H}" fill="{BG}"/>',
@@ -402,11 +557,11 @@ def svg():
         y += 3.55
 
     # Title with flanking marks.
-    title, tw = text_path("DEATH'S HAND", W / 2, 10.6, size=3.5, color=BONE, tracking=0.55)
+    title, tw = text_path(spec["title"], W / 2, 10.6, size=3.5, color=BONE, tracking=0.55)
     out += title
     for side in (-1, 1):
         x = W / 2 + side * (tw / 2 + 3.2)
-        out += s_chaos_star(x, 9.4, 1.15, color=BLOOD_HI)
+        out += SIGILS[spec["flank"]](x, 9.4, 1.15, color=BLOOD_HI)
 
     # Divider between controls and jacks: a chain of diamonds.
     for i in range(23):
@@ -414,14 +569,15 @@ def svg():
         out.append(poly([(x, 79.3), (x + 0.5, 80), (x, 80.7), (x - 0.5, 80), (x, 79.3)], color=BLOOD, w=0.2))
 
     # The mark, in the space left of the altar.
-    out += hand_mark((COLS[0] + COLS[1]) / 2, 116.5, 15.0)
+    out += hand_mark(spec["mark_x"], 116.5, 15.0)
 
     # Output altar.
-    ax0, ax1 = COLS[2] - 7.5, COLS[3] + 7.5
+    ax0, ax1 = spec["altar"][0] - 7.5, spec["altar"][1] + 7.5
+    outs = tuple(x for kind, _, x, _, _ in spec["controls"] if kind == "out")
     out.append(f'<rect x="{f(ax0)}" y="108.6" width="{f(ax1 - ax0)}" height="16.4" rx="1.0" fill="{BLOOD_DARK}" stroke="{BLOOD}" stroke-width="0.35"/>')
-    out += drips(ax0 + 0.6, ax1 - 0.6, 108.6, random.Random(7), keep_clear=(COLS[2], COLS[3]))
+    out += drips(ax0 + 0.6, ax1 - 0.6, 108.6, random.Random(7), keep_clear=outs)
 
-    for kind, _, x, y0, sigil in CONTROLS:
+    for kind, _, x, y0, sigil in spec["controls"]:
         cr = CONTROL_R[kind]
         if kind in ("knob_l", "knob_m"):
             out += tick_ring(x, y0, cr, 11, long_every=5)
@@ -435,8 +591,12 @@ def svg():
             out.append(circle(x, y0, cr + 1.0, BONE_DIM, w=0.25))
         elif kind == "out":
             out.append(circle(x, y0, cr + 1.1, BLOOD_HI, w=0.45, fill="#4a0a0d"))
+        elif kind == "button":
+            out.append(circle(x, y0, cr + 0.9, BONE_DIM, w=0.25))
+        elif kind == "light":
+            out.append(circle(x, y0, cr + 0.6, BLOOD, w=0.25))
         elif kind == "switch":
-            # Up = ratio lock: a small closed triangle above, open below.
+            # Up = on (ratio lock, bass compensation): a small closed triangle above, open below.
             out.append(poly([(x - 0.7, y0 - 4.6), (x, y0 - 5.4), (x + 0.7, y0 - 4.6)], closed=True, color=BLOOD_HI, w=0.2, fill=BLOOD_HI))
             out.append(poly([(x - 0.7, y0 + 4.6), (x, y0 + 5.4), (x + 0.7, y0 + 4.6)], closed=True, color=BLOOD, w=0.2))
         color = BLOOD_HI if kind == "out" else BONE
@@ -446,17 +606,13 @@ def svg():
     return "\n".join(out)
 
 
-# Where each control sits at its default (0..1 of the 300 degree sweep), for the preview.
-DEFAULTS = {"PITCH_PARAM": 0.5, "RATIO_PARAM": 2.5 / 11, "SYMMETRY_PARAM": 0.5, "FINE_PARAM": 0.5}
-
-
-def preview():
+def preview(spec):
     """The panel with stand-in knobs, jacks and the switch drawn on, for the README and docs."""
-    out = [svg().replace("</svg>", "")]
-    for kind, name, x, y, _ in CONTROLS:
+    out = [svg(spec).replace("</svg>", "")]
+    for kind, name, x, y, _ in spec["controls"]:
         if kind in ("knob_l", "knob_m", "trim", "snap", "snap4"):
             r = CONTROL_R[kind] * 0.82
-            a = -150 + 300 * DEFAULTS.get(name, 0.0)
+            a = -150 + 300 * spec["defaults"].get(name, 0.0)
             tip = polar(x, y, r * 0.78, a)
             out.append(circle(x, y, r, "#3a3536", w=0.35, fill="#1b1819"))
             out.append(circle(x, y, r * 0.86, "#262223", w=0.25, fill="#1b1819"))
@@ -467,27 +623,34 @@ def preview():
         elif kind == "switch":
             out.append(f'<rect x="{f(x - 1.5)}" y="{f(y - 3.2)}" width="3" height="6.4" rx="0.6" fill="#9a9792" stroke="#5a5652" stroke-width="0.25"/>')
             out.append(f'<rect x="{f(x - 1.0)}" y="{f(y - 2.7)}" width="2" height="2.6" rx="0.4" fill="#e8e2d6"/>')
+        elif kind == "button":
+            out.append(circle(x, y, 2.6, "#5a5652", w=0.3, fill="#9a9792"))
+            out.append(circle(x, y, 1.9, "#7a7672", w=0.2, fill="#c9c6c1"))
+        elif kind == "light":
+            out.append(circle(x, y, 1.1, "#3a0a0c", w=0.2, fill="#5a0b10"))
     out.append("</svg>")
     return "\n".join(out)
 
 
-def header():
+def header(spec):
+    ns = spec["namespace"]
     lines = [
         "// Generated by res/make_panel.py — edit the table there, not here.",
         "#pragma once",
         "",
-        "namespace panel {",
+        f"namespace {ns} {{",
         "struct Pos { float x, y; }; // millimetres from the top-left",
     ]
-    for _kind, name, x, y, _ in CONTROLS:
+    for _kind, name, x, y, _ in spec["controls"]:
         lines.append(f"constexpr Pos {name} = {{{x:.2f}f, {y:.2f}f}};")
-    lines.append("} // namespace panel")
+    lines.append(f"}} // namespace {ns}")
     return "\n".join(lines) + "\n"
 
 
 if __name__ == "__main__":
     root = Path(__file__).resolve().parent.parent
-    (root / "res" / "ComplexOsc.svg").write_text(svg())
-    (root / "res" / "panel-preview.svg").write_text(preview())
-    (root / "src" / "PanelLayout.hpp").write_text(header())
-    print(f"wrote {root / 'res/ComplexOsc.svg'}, {root / 'res/panel-preview.svg'} and {root / 'src/PanelLayout.hpp'} ({HP} HP)")
+    for spec in PANELS:
+        (root / "res" / spec["svg"]).write_text(svg(spec))
+        (root / "res" / spec["preview"]).write_text(preview(spec))
+        (root / "src" / spec["header"]).write_text(header(spec))
+        print(f"wrote res/{spec['svg']}, res/{spec['preview']} and src/{spec['header']} ({HP} HP)")

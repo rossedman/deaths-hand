@@ -1,6 +1,6 @@
 name: ci
 
-# Lints, runs the host tests, and builds both targets (patch.Init firmware and the VCV Rack plugin)
+# Lints, runs the host tests, and builds both targets (patch.Init firmware for both modules and the VCV Rack plugin)
 # on every pull request and push to main.
 
 on:
@@ -70,7 +70,9 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: firmware
-          path: hw/build/deaths-hand.bin
+          path: |
+            hw/build/deaths-hand.bin
+            hw/build/doombringer.bin
           retention-days: 14
 
   vcv:

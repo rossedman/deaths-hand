@@ -42,6 +42,8 @@ modulator ──┬────────────────────�
 
 Everything runs 4× oversampled and is decimated with a 129-tap Kaiser FIR.
 
+**Its companion, [Doombringer](#doombringer)**, is a ladder filter that summons what isn't there: in the same plugin, on the same patch.Init, from the same DSP core.
+
 ## Reading the panel
 
 <img src="vcv/res/panel-preview.svg" alt="The Death's Hand panel" width="280" align="right">
@@ -105,15 +107,43 @@ live in `dsp/Macros.hpp`.
 | Unison: 4 voices spread, biased fold | beat-rate wobble 0.05 V (0.26 V without the envelope-aware DC fix) |
 | patch.Init flash / RAM | 106 KB of 128 KB / 36 KB (arm-gcc 13.3) |
 
+## Doombringer
+
+<img src="vcv/res/doombringer-preview.svg" alt="The Doombringer panel" width="280" align="right">
+
+A four-pole ladder filter with something extra. The loop is solved with no
+sample of delay, so it self-oscillates in tune (0.06 cents, 33 Hz to 8 kHz)
+and plays as an oscillator, and a morph knob moves through LP4, LP2, BP, HP2
+and HP4. Three macros sit on the front panel, like Death's Hand's:
+
+| Macro | Does |
+|---|---|
+| **WRATH** | Resonance and drive: clean, then ringing, then past 0.64 it screams on its own, then the input squares off |
+| **RUIN** | Corrupts the resonance: the feedback folds, the output's level bends the cutoff (pinged hits fall in pitch), then the loop is pushed past the knob and breaks free of a quiet input |
+| **DOOM** | Undertones: squares an octave and two below the input's pitch, following its envelope, then lurching the cutoff |
+
+On the shift layer: morph, FM depth, **HUNGER** (the input's envelope opens
+or closes the cutoff) and fine tune. A button tap or Gate 1 **pings** it: a
+half-cycle at the cutoff that rings at the same level at any pitch, so with
+no input it is a drum. OUT L is the morph, OUT R the four-pole low-pass, and
+CV OUT 1 the input's envelope.
+
+The full guide, with the panel decoder, the control map, five patches and
+the measurements, is [in the docs](https://rossedman.io/deaths-hand/doombringer/).
+The engine is `dsp/Doombringer.hpp`, the firmware `hw/doombringer.cpp`, and
+the tests `test/doom_tests.cpp`.
+
+<br clear="right">
+
 ## Flash your patch.Init
 
 ### Fastest: prebuilt binary
-1. Download `deaths-hand.bin` from the [latest release](https://github.com/rossedman/deaths-hand/releases/latest).
+1. Download `deaths-hand.bin` (or `doombringer.bin`) from the [latest release](https://github.com/rossedman/deaths-hand/releases/latest).
    Every asset is signed; see [Verifying releases](SECURITY.md#verifying-releases).
 2. Put the Patch SM into its bootloader: hold **BOOT**, tap **RESET**, release BOOT
    (both buttons are on the Patch SM board on the back of the module).
 3. Open Electrosmith's **Daisy Web Programmer** in Chrome (it uses WebUSB), connect
-   the module over USB, choose `deaths-hand.bin` and flash.
+   the module over USB, choose the `.bin` and flash.
 
 ### From source (macOS)
 ```sh
@@ -122,10 +152,11 @@ brew install dfu-util
 git submodule update --init --recursive     # pulls lib/libDaisy
 make -C lib/libDaisy                        # once
 make -C hw                                  # → hw/build/deaths-hand.bin
-make -C hw program-dfu                      # after BOOT + RESET
+make -C hw APP=doombringer                  # → hw/build/doombringer.bin
+make -C hw program-dfu                      # after BOOT + RESET (add APP=doombringer for the filter)
 ```
 
-`make -C hw CPU_METER=1` builds a variant that prints DSP load once a second over
+`make -C hw CPU_METER=1` (with or without `APP=doombringer`) builds a variant that prints DSP load once a second over
 USB serial (`screen /dev/tty.usbmodem* 115200`). That's the number to watch as
 the engine grows.
 
@@ -203,19 +234,25 @@ routing 0. Pitch 8:40, MALICE 9:00. Sweep **LEGION from 8:30 to 5:00** and
 ```sh
 make -C test analyze    # tests + renders + spectrograms (needs numpy/scipy/matplotlib)
 ```
-Writes `test/out/*.wav` (including `demo.wav`, the six `ex*.wav` patches and
-the feedback/chaos sweeps) and `test/out/aliasing.png`. The suite checks pitch
+Writes `test/out/*.wav` (including `demo.wav`, the six `ex*.wav` patches,
+the feedback/chaos sweeps and Doombringer's `doom_*.wav`) and `test/out/aliasing.png`. The suite checks pitch
 accuracy, stability under abusive parameters and external FM, through-zero
 behaviour, the feedback spectrum, that chaos actually breaks periodicity,
 Lorenz boundedness from 0.01 Hz to 20 kHz, 60-second worst-case runs, the
-shift-layer pickup logic, and output bounds.
+shift-layer pickup logic, and output bounds. Doombringer's suite checks its
+five responses against the analog shapes, self-oscillation tracking and level,
+bass compensation, ping, drive, the undertones, HUNGER, RUIN, its macros, and
+60-second runs with everything at full.
 
 ## VCV Rack
 
-The plugin mirrors the patch.Init: the same four front knobs, the shift-layer
+The plugin holds both modules, Death's Hand and Doombringer. Each mirrors its
+patch.Init program. Death's Hand has the same four front knobs, the shift-layer
 settings as their own knobs, a routing knob with a trigger input, and the same
-jacks. Knobs and CVs go through the same `cosc::panelToParams` as the firmware,
-so a patch translates one-to-one.
+jacks. Doombringer has the cutoff and its macros on top, its shift-layer settings
+below, a ping button and the same jacks. Knobs and CVs go through the same
+`cosc::panelToParams` and `doom::panelToParams` as the firmware, so a patch
+translates one-to-one.
 
 Each release has signed packages for Linux x64, Windows x64, macOS x64 and
 macOS arm64. To build one yourself:
@@ -224,11 +261,12 @@ macOS arm64. To build one yourself:
 scripts/fetch-rack-sdk.sh ../Rack-SDK lin-x64   # or win-x64, mac-x64, mac-arm64
 make -C vcv RACK_DIR=../../Rack-SDK install
 ```
-The panel is generated: `make panel` writes `res/ComplexOsc.svg`,
-`res/panel-preview.svg` (with stand-in knobs and jacks) and `src/PanelLayout.hpp` from one table, so the widget
-positions can't drift from the artwork. Every sigil is drawn from code (no
-fonts or images), so it renders in Rack and scales cleanly to a printed panel. It uses real Eurorack dimensions
-(16 HP × 128.5 mm), so it's also a starting point for a physical panel.
+The panels are generated: `make panel` writes `res/ComplexOsc.svg`,
+`res/panel-preview.svg` (with stand-in knobs and jacks) and `src/PanelLayout.hpp` from one table, and
+Doombringer's `res/Doombringer.svg`, `res/doombringer-preview.svg` and `src/DoombringerLayout.hpp` from another,
+so the widget positions can't drift from the artwork. Every sigil is drawn from code (no
+fonts or images), so it renders in Rack and scales cleanly to a printed panel. Both use real Eurorack dimensions
+(16 HP × 128.5 mm), so they're also a starting point for physical panels.
 
 ## Design notes
 - **Wavefolder DC:** symmetry biases a sine folder, which creates DC. A

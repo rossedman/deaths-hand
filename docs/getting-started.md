@@ -1,12 +1,12 @@
 # Getting started
 
-Flash the firmware onto an Electrosmith patch.Init, or load the plugin into VCV Rack. Both run the same DSP core, so a patch you find in one sounds the same in the other.
+Flash the firmware onto an Electrosmith patch.Init, or load the plugin into VCV Rack. Both run the same DSP core, so a patch you find in one sounds the same in the other. There are two modules, Death's Hand (the oscillator) and [Doombringer](doombringer.md) (the filter): one plugin holds both, and each is its own patch.Init program.
 
 ## patch.Init: the prebuilt binary
 
-1. Download `deaths-hand.bin` from the [latest release](https://github.com/rossedman/deaths-hand/releases/latest).
+1. Download `deaths-hand.bin` (or `doombringer.bin` for the filter) from the [latest release](https://github.com/rossedman/deaths-hand/releases/latest).
 2. Put the Patch SM into its bootloader: hold **BOOT**, tap **RESET**, release **BOOT**. Both buttons are on the Patch SM board on the back of the module.
-3. Open Electrosmith's [Daisy Web Programmer](https://electro-smith.github.io/Programmer/) in Chrome (it uses WebUSB), connect the module over USB, choose `deaths-hand.bin` and flash.
+3. Open Electrosmith's [Daisy Web Programmer](https://electro-smith.github.io/Programmer/) in Chrome (it uses WebUSB), connect the module over USB, choose the `.bin` and flash.
 
 Every release asset is signed. To check yours before it touches the hardware, see [Verifying releases](security.md#verifying-releases).
 
@@ -19,8 +19,8 @@ brew install --cask gcc-arm-embedded
 brew install dfu-util
 git clone --recurse-submodules https://github.com/rossedman/deaths-hand
 cd deaths-hand
-make firmware                # libDaisy, then hw/build/deaths-hand.bin
-make -C hw program-dfu       # after BOOT + RESET
+make firmware                # libDaisy, then hw/build/deaths-hand.bin and hw/build/doombringer.bin
+make -C hw program-dfu       # after BOOT + RESET; add APP=doombringer for the filter
 ```
 
 On Linux, install the [Arm GNU toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) and `dfu-util` from your package manager instead.

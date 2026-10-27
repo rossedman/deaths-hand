@@ -18,7 +18,7 @@ Building the other targets needs more:
 
 | Target | Needs | Command |
 | --- | --- | --- |
-| patch.Init firmware | [Arm GNU toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) (`arm-none-eabi-gcc`), the `lib/libDaisy` submodule | `make firmware` |
+| patch.Init firmware (both programs) | [Arm GNU toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads) (`arm-none-eabi-gcc`), the `lib/libDaisy` submodule | `make firmware` |
 | VCV Rack plugin | the [Rack 2 SDK](https://vcvrack.com/downloads/) (`scripts/fetch-rack-sdk.sh ../Rack-SDK <platform>` downloads and verifies it), `jq`, `zstd` | `make vcv RACK_DIR=../Rack-SDK` |
 | Spectrograms | nothing extra (uv fetches numpy, scipy, matplotlib) | `make analyze` |
 | Docs site | a C++17 compiler (the listening page's audio is rendered from the DSP); uv fetches MkDocs and the encoder | `make docs-serve` |
@@ -33,8 +33,8 @@ make check
 ```
 
 - `make lint` runs `clang-format --dry-run` on the C++ and ruff on the Python. `make fmt` fixes formatting.
-- `make test` builds and runs `test/host_tests.cpp`: 1V/oct tracking, stability under abusive settings, through-zero FM, the feedback spectrum, chaos, Lorenz bounds, 60-second worst-case runs and the shift-layer pickup. It exits non-zero on any failure.
-- `make panel-check` fails if `vcv/src/PanelLayout.hpp` has drifted from the table in `vcv/res/make_panel.py`.
+- `make test` builds and runs `test/host_tests.cpp`: 1V/oct tracking, stability under abusive settings, through-zero FM, the feedback spectrum, chaos, Lorenz bounds, 60-second worst-case runs and the shift-layer pickup. Then it runs `test/doom_tests.cpp` for Doombringer: the five responses, self-oscillation, ping, drive, the undertones, HUNGER, RUIN, the macros and 60-second runs. It exits non-zero on any failure. `make -C test run-osc` or `run-doom` runs one suite.
+- `make panel-check` fails if `vcv/src/PanelLayout.hpp` or `vcv/src/DoombringerLayout.hpp` has drifted from the tables in `vcv/res/make_panel.py`.
 
 CI also builds the firmware and the VCV plugin on every pull request.
 
@@ -42,8 +42,8 @@ CI also builds the firmware and the VCV plugin on every pull request.
 
 - **Keep `dsp/` portable.** No heap allocation, no platform headers, volts in and volts out. Both targets and the host tests include it unchanged.
 - **Test the sound.** A DSP change comes with a host test that would have caught the bug, or a check that pins the new behaviour. Name measured numbers in the README only when the tests print them.
-- **The panel is generated.** Edit the table in `vcv/res/make_panel.py` and run `make panel`; never hand-edit `ComplexOsc.svg` or `PanelLayout.hpp`.
-- **Watch the budget.** The patch.Init build must fit its 128 KB of flash and run at 48 kHz in real time. If you add cost to the audio path, measure it with `make -C hw CPU_METER=1`.
+- **The panels are generated.** Edit the tables in `vcv/res/make_panel.py` and run `make panel`; never hand-edit the panel SVGs or the layout headers.
+- **Watch the budget.** Each patch.Init program must fit its 128 KB of flash and run at 48 kHz in real time. If you add cost to the audio path, measure it with `make -C hw CPU_METER=1` (add `APP=doombringer` for the filter).
 - **Record user-facing changes** in `CHANGELOG.md` under the upcoming version.
 
 ## Versions

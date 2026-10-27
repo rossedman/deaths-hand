@@ -1,5 +1,6 @@
-// Renders the docs' listening page: the six documented patches and the showcase
-// clips (test/patches.hpp), each as a 48 kHz 16-bit mono WAV normalised to -1 dBFS.
+// Renders the docs' listening page: Death's Hand's six documented patches and
+// showcase clips (test/patches.hpp), and Doombringer's (test/doom_patches.hpp),
+// each as a 48 kHz 16-bit mono WAV normalised to -1 dBFS.
 //
 //   build/render <dir>     (make -C test renders)
 //
@@ -9,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "doom_patches.hpp"
 #include "patches.hpp"
 
 using namespace cosc;
@@ -86,5 +88,7 @@ int main(int argc, char** argv) {
     }
     std::printf("showcase\n");
     for (const Clip& c : showcase()) ok = writeWav(dir + "/" + c.file + ".wav", render(c.seconds, c.automate)) && ok;
+    std::printf("doombringer\n");
+    for (const doom::DoomClip& c : doom::doomClips()) ok = writeWav(dir + "/doom_" + c.file + ".wav", doom::renderClip(c, kFs)) && ok;
     return ok ? 0 : 1;
 }

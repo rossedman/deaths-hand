@@ -1,6 +1,6 @@
 # Measurements
 
-Every number here is printed by the host tests (`make test`), which run the same DSP core the firmware and the plugin use. CI runs them on every pull request.
+Every number here is printed by the host tests (`make test`), which run the same DSP core the firmware and the plugin use. CI runs them on every pull request. These are Death's Hand's; Doombringer's are [on its page](doombringer.md#measured).
 
 | | |
 |---|---|
