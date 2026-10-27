@@ -34,6 +34,12 @@ body {
 .mono { font-family: "JetBrains Mono", monospace; font-variant-ligatures: none; }
 .title { font-family: Cinzel, serif; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
 
+/* The maker: Portal Electronics' door and wordmark. */
+.maker { display: flex; align-items: center; gap: 12px; }
+.maker .door { height: 34px; width: auto; }
+.maker .word { height: 14px; width: auto; }
+.maker span { font-family: Inter, sans-serif; font-size: 11.5px; font-weight: 600; letter-spacing: 0.42em; color: var(--mist); }
+
 /* Rune columns down the edges, as on the panel. */
 .runes { position: absolute; top: 0; bottom: 0; width: 32px; background: url(../site/runes.svg) repeat-y; opacity: 0.32; }
 .runes.l { left: 18px; }

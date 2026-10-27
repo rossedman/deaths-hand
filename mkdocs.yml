@@ -16,7 +16,7 @@ exclude_docs: |
 theme:
   name: material
   custom_dir: overrides
-  logo: assets/site/favicon.svg
+  logo: assets/site/logo.svg
   favicon: assets/site/favicon.svg
   palette:
     scheme: slate
@@ -105,6 +105,8 @@ nav:
       - Security: security.md
       - Changelog: changelog.md
       - Code of conduct: code-of-conduct.md
+
+copyright: Death's Hand is a Portal Electronics module · MIT license
 
 extra:
   social:

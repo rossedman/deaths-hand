@@ -359,23 +359,25 @@ def drips(x0, x1, y, rng, keep_clear=()):
     return out
 
 
-# The project's mark: the Portal doorway with an eye, read from the site's logo
-# (docs/assets/site/logo.svg) so the panel and the site can't drift apart.
-LOGO = Path(__file__).resolve().parents[2] / "docs" / "assets" / "site" / "logo.svg"
+# The maker's mark: Portal Electronics' doorway over its PORTAL wordmark, read from
+# the site's copies (docs/assets/site/portal*.svg) so panel and site can't drift.
+SITE = Path(__file__).resolve().parents[2] / "docs" / "assets" / "site"
 
 
-def portal_mark(cx, cy, height, logo=None):
-    """The mark, `height` mm tall and centred on (cx, cy), in dried blood with a red eye."""
-    text = Path(logo or LOGO).read_text()
+def svg_art(name, cx, top, height, colours):
+    """An SVG of two filled layers (line art, accent), `height` mm tall, centred on cx."""
+    text = (SITE / name).read_text()
     _, _, w, h = (float(v) for v in re.search(r'viewBox="([^"]+)"', text).group(1).split())
-    lines, eye = re.findall(r' d="([^"]+)"', text)[:2]
     k = height / h
-    return [
-        f'<g transform="translate({f(cx - w * k / 2)} {f(cy - height / 2)}) scale({k:.5f})">',
-        f'<path fill="{BLOOD}" fill-rule="evenodd" d="{lines}"/>',
-        f'<path fill="{BLOOD_HI}" fill-rule="evenodd" d="{eye}"/>',
-        "</g>",
-    ]
+    out = [f'<g transform="translate({f(cx - w * k / 2)} {f(top)}) scale({k:.5f})">']
+    for d, colour in zip(re.findall(r' d="([^"]+)"', text), colours, strict=True):
+        out.append(f'<path fill="{colour}" fill-rule="evenodd" d="{d}"/>')
+    return out + ["</g>"]
+
+
+def makers_mark(cx, top):
+    """The door (12.5 mm) above the wordmark, in dried blood with red accents."""
+    return svg_art("portal.svg", cx, top, 12.5, (BLOOD, BLOOD_HI)) + svg_art("portal-wordmark.svg", cx, top + 14.2, 2.0, (BLOOD, BLOOD_HI))
 
 
 # ----------------------------------------------------------------- panel
@@ -408,8 +410,8 @@ def svg():
         x = 6.2 + i * (W - 12.4) / 22
         out.append(poly([(x, 79.3), (x + 0.5, 80), (x, 80.7), (x - 0.5, 80), (x, 79.3)], color=BLOOD, w=0.2))
 
-    # The mark, in the space left of the altar.
-    out += portal_mark((COLS[0] + COLS[1]) / 2, 116.5, 17.0)
+    # The maker's mark, in the space left of the altar.
+    out += makers_mark((COLS[0] + COLS[1]) / 2, 107.0)
 
     # Output altar.
     ax0, ax1 = COLS[2] - 7.5, COLS[3] + 7.5

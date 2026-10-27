@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 
-- New mark: the Portal doorway with an eye, traced to SVG from the original artwork, in bone with a blood-red eye. A simplified version (door, triangle and eye) is the favicon and site header logo, where the full mark's rays would blur. The mark replaces the hand on the site, the banner, the social card and the module panel.
+- Death's Hand is a Portal Electronics module. The company's door mark and PORTAL wordmark, traced to SVG from the original artwork, are the maker's mark on the module panel and the credit on the site, the README banner and the social card. In VCV Rack the plugin's brand is now Portal Electronics. The hand stays Death's Hand's own mark.
 
 ## 0.1.1
 

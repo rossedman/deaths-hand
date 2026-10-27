@@ -11,6 +11,8 @@
 
 # Death's Hand
 
+*A Portal Electronics module.*
+
 **[Listen to it →](https://rossedman.io/deaths-hand/listen/)** Fourteen renders from the same DSP the module runs.
 
 An evil West-Coast style complex oscillator for the Electrosmith patch.Init and VCV Rack — two oscillators where the modulator
@@ -69,7 +71,8 @@ the panel reads in columns.
 | Blood drop with rings | Modulator out |
 
 Bone rings mark inputs, red rings mark outputs, and the outputs sit on the
-altar. The Portal mark, the edge runes and the summoning circle are decoration.
+altar. The Portal Electronics maker's mark (the door), the edge runes and the
+summoning circle are decoration.
 
 ## The macros
 

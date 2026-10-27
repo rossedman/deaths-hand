@@ -52,7 +52,7 @@ panel:
 # (The SVG title outlines depend on the installed font, so only the header is compared.)
 panel-check:
 	@tmp=$$(mktemp -d) && mkdir -p $$tmp/vcv/res $$tmp/vcv/src $$tmp/docs/assets/site && \
-	cp vcv/res/make_panel.py $$tmp/vcv/res/ && cp docs/assets/site/logo.svg $$tmp/docs/assets/site/ && \
+	cp vcv/res/make_panel.py $$tmp/vcv/res/ && cp docs/assets/site/portal.svg docs/assets/site/portal-wordmark.svg $$tmp/docs/assets/site/ && \
 	$(PYTHON_TOOLS) python $$tmp/vcv/res/make_panel.py >/dev/null && \
 	diff -u vcv/src/PanelLayout.hpp $$tmp/vcv/src/PanelLayout.hpp; rc=$$?; rm -rf $$tmp; exit $$rc
 
