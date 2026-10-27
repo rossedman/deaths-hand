@@ -4,9 +4,9 @@
 #   make RACK_DIR=~/Rack-SDK-mac-x64 CROSS_COMPILE=x86_64-apple-darwin dist
 RACK_DIR ?= ../../Rack-SDK
 
-# The repo root, not dsp/: on case-insensitive filesystems (macOS, Windows) dsp/Math.hpp
-# would shadow the SDK's <math.hpp> if dsp/ were on the include path.
-FLAGS += -I..
+# No directory of ours goes on the include path: on case-insensitive filesystems
+# (macOS, Windows) dsp/Math.hpp shadows the SDK's <math.hpp>, and the root's VERSION
+# shadows libc++'s <version>. Sources include the DSP by relative path instead.
 # The SDK adds -std=c++11 after CXXFLAGS; EXTRA_CXXFLAGS is appended last, so this wins.
 EXTRA_CXXFLAGS += -std=c++17
 

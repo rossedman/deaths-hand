@@ -1,7 +1,8 @@
 name: docs
 
 # Builds the docs site with --strict on every change to it, and deploys it to GitHub Pages
-# from main and on releases. Pull requests only build.
+# from main and on releases. Pull requests only build. The build renders the listening
+# page's audio from the DSP (make docs-audio), so DSP and patch changes rebuild it too.
 
 on:
   push:
@@ -11,6 +12,10 @@ on:
       - "overrides/**"
       - "mkdocs.yml"
       - "requirements-docs.txt"
+      - "requirements-tools.txt"
+      - "Makefile"
+      - "dsp/**"
+      - "test/**"
       - "CONTRIBUTING.md"
       - "CHANGELOG.md"
       - "CODE_OF_CONDUCT.md"
@@ -22,6 +27,10 @@ on:
       - "overrides/**"
       - "mkdocs.yml"
       - "requirements-docs.txt"
+      - "requirements-tools.txt"
+      - "Makefile"
+      - "dsp/**"
+      - "test/**"
       - "CONTRIBUTING.md"
       - "CHANGELOG.md"
       - "CODE_OF_CONDUCT.md"

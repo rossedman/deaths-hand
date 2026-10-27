@@ -28,7 +28,7 @@
         </div>
         <div class="lp-cta">
           <a class="lp-btn lp-btn--primary" href="{{ 'getting-started/' | url }}">Summon it {% include ".icons/material/arrow-right.svg" %}</a>
-          <a class="lp-btn" href="{{ 'patches/' | url }}">{% include ".icons/material/skull-outline.svg" %} Six evil patches</a>
+          <a class="lp-btn" href="{{ 'listen/' | url }}">{% include ".icons/material/headphones.svg" %} Hear it</a>
         </div>
       </div>
 
@@ -121,7 +121,29 @@
     </div>
   </section>
 
-  <section class="lp-section" id="the-panel">
+  <section class="lp-section" id="hear-it">
+    <div class="lp-wrap">
+      <p class="lp-eyebrow">Hear it</p>
+      <h2>Don't take our word.<br><span>Take its voice.</span></h2>
+      <p class="lp-lede lp-lede--center">Rendered by the same DSP core the module runs, from knob positions you can dial in. Dry, and rebuilt from the current code every time these docs publish.</p>
+      <div class="lp-listen">
+        {% for stem, title, about in [
+          ("legion_sweep", "Legion, 0 to full", "One voice becomes a drifting swarm."),
+          ("descent", "Descent", "Four and a half octaves down into collapse."),
+        ] %}
+        <article class="lp-panel lp-clip">
+          <h3>{{ title }}</h3>
+          <div class="lp-panel__sub">{{ about }}</div>
+          <img class="lp-clip__spec" src="{{ ('assets/audio/' ~ stem ~ '.jpg') | url }}" alt="Spectrogram of {{ title }}" loading="lazy">
+          <audio controls preload="none" src="{{ ('assets/audio/' ~ stem ~ '.mp3') | url }}"></audio>
+        </article>
+        {% endfor %}
+      </div>
+      <p class="lp-center"><a class="lp-link" href="{{ 'listen/' | url }}">All fourteen renders {% include ".icons/material/arrow-right.svg" %}</a></p>
+    </div>
+  </section>
+
+  <section class="lp-section lp-section--alt" id="the-panel">
     <div class="lp-wrap lp-split">
       <div class="lp-panelart">
         <img src="{{ 'assets/panel.png' | url }}" width="560" height="885" alt="The Death's Hand panel: sixteen controls marked with sigils over a faint summoning circle, rune columns down both edges, and the two outputs on a red altar." loading="lazy">
@@ -145,7 +167,7 @@
     </div>
   </section>
 
-  <section class="lp-section lp-section--alt">
+  <section class="lp-section">
     <div class="lp-wrap">
       <p class="lp-eyebrow">Three vessels</p>
       <h2>One core.<br><span>Three bodies.</span></h2>
@@ -172,7 +194,7 @@ make analyze</code></pre>
     </div>
   </section>
 
-  <section class="lp-section">
+  <section class="lp-section lp-section--alt">
     <div class="lp-wrap">
       <p class="lp-eyebrow">How it works</p>
       <h2>Bend. Fold.<br><span>Feed it to itself.</span></h2>
@@ -183,7 +205,7 @@ make analyze</code></pre>
     </div>
   </section>
 
-  <section class="lp-section lp-section--alt">
+  <section class="lp-section">
     <div class="lp-wrap">
       <p class="lp-eyebrow">The grimoire</p>
       <h2>Go deeper.</h2>

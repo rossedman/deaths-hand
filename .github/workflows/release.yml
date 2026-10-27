@@ -3,7 +3,9 @@ name: release
 # On a v* tag: build the patch.Init firmware and the VCV Rack plugin for Linux x64,
 # Windows x64, macOS x64 and macOS arm64, sign every asset keylessly with cosign,
 # attest build provenance, and publish a GitHub release. The tag must match the
-# version in vcv/plugin.json (VCV requires it to start with 2.).
+# project version in VERSION (v0.1.0 for 0.1.0). vcv/plugin.json keeps its own
+# 2.x.y version, because Rack 2 refuses to load a plugin whose version doesn't
+# start with "2.".
 #
 # Pull requests that touch the build run every build job, so a broken platform
 # shows up before a tag does; only a tag signs and publishes.
@@ -37,16 +39,24 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
-      - name: Tag matches vcv/plugin.json
+      - name: Tag matches VERSION, and plugin.json is a Rack 2 version
         if: startsWith(github.ref, 'refs/tags/')
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          want="v$(jq -r .version vcv/plugin.json)"
+          want="v$(tr -d '[:space:]' < VERSION)"
           if [ "$TAG" != "$want" ]; then
-            echo "::error::tag $TAG does not match vcv/plugin.json version ($want)"
+            echo "::error::tag $TAG does not match VERSION ($want)"
             exit 1
           fi
+          plugin="$(jq -r .version vcv/plugin.json)"
+          case "$plugin" in
+            2.*) ;;
+            *)
+              echo "::error::vcv/plugin.json version $plugin must start with 2. or Rack 2 won't load it"
+              exit 1
+              ;;
+          esac
       - uses: carlosperate/arm-none-eabi-gcc-action@49f4db4520f840e77ab1e99b24cfac2c540a21b1 # v1.14.1
         with:
           release: 13.3.Rel1
