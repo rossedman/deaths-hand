@@ -10,6 +10,7 @@
 
 #include "../dsp/ComplexOsc.hpp"
 #include "../dsp/Panel.hpp"
+#include "patches.hpp"
 #include "../dsp/Pickup.hpp"
 
 using namespace cosc;
@@ -702,77 +703,10 @@ static void renderAll(const std::string& dir) {
 }
 
 // ---------------------------------------------------------------- examples
-// Six patches written as patch.Init knob positions (0..1 = 7 o'clock..5 o'clock)
-// and rendered through the same panel mapping the firmware uses, so they can be
-// dialed in by hand. See README "Six evil patches".
-struct Example {
-    const char*                             file;
-    const char*                             name;
-    std::function<void(float, PanelState&)> automate;
-};
-
+// The six documented patches (test/patches.hpp), rendered through the panel mapping.
 static void renderExamples(const std::string& dir) {
     std::printf("examples\n");
-    const Example examples[] = {
-        {"ex1_reactor_hum.wav", "Reactor hum",
-         [](float t, PanelState& s) {  // low drone; rock MALICE to make the feedback breathe
-             s.pitch    = 1.f / 6.f;   // C2
-             s.ratio    = 1.5f / 11.f; // 1:2
-             s.flesh    = 0.35f;
-             s.malice   = 0.3f + 0.2f * std::sin(t * 6.283f * 1.5f);
-             s.legion   = 0.12f;
-             s.symmetry = 0.65f;
-         }},
-        {"ex2_lorenz_growl.wav", "Lorenz growl",
-         [](float t, PanelState& s) { // chaotic modulator in audio range: an engine that won't idle
-             s.pitch     = 0.25f;
-             s.ratioLock = false;
-             s.ratio     = 0.618f; // free modulator, about 113 Hz
-             s.shape     = 0.9f;   // Lorenz
-             s.flesh     = 0.4f + 0.2f * t;
-             s.routing   = 1;
-         }},
-        {"ex3_chaos_bells.wav", "Chaos bells",
-         [](float t, PanelState& s) { // sequencer -> CV_5, decaying envelope -> CV_6 (FLESH), MALICE rises
-             static const float notes[] = {0, 7, 3, 10, 5, 12, 1, 8};
-             const float        step    = t * 16.f;
-             const float        env     = std::exp(-5.f * (step - std::floor(step)));
-             s.pitch                    = 0.5f;
-             s.pitchCv                  = notes[static_cast<int>(step) % 8] / 12.f;
-             s.ratio                    = 5.5f / 11.f; // 1:3
-             s.flesh                    = 0.05f;
-             s.fleshCv                  = 2.5f * env;
-             s.malice                   = 0.45f + 0.4f * t;
-             s.routing                  = 2;
-         }},
-        {"ex4_feedback_scream.wav", "Feedback scream",
-         [](float t, PanelState& s) { // pitch dives while MALICE pushes past saw into noise
-             s.pitch    = 0.917f - 0.667f * t;
-             s.ratio    = 3.5f / 11.f; // 1:1.5
-             s.flesh    = 0.6f;
-             s.malice   = 0.5f + 0.5f * t;
-             s.symmetry = 0.3f;
-         }},
-        {"ex5_possession.wav", "Possession",
-         [](float t, PanelState& s) { // everything rising; the modulator turns to Lorenz halfway
-             s.pitch    = 1.f / 3.f;
-             s.ratio    = 4.5f / 11.f;            // 1:2
-             s.shape    = t < 0.5f ? 0.7f : 0.9f; // square, then Lorenz
-             s.flesh    = 0.45f + 0.45f * t;
-             s.malice   = 0.25f + 0.6f * t;
-             s.legion   = 0.3f;
-             s.symmetry = 0.75f;
-             s.routing  = 3;
-         }},
-        {"ex6_legion.wav", "Legion",
-         [](float t, PanelState& s) { // one voice becomes a swarm while the fold opens
-             s.pitch  = 1.f / 6.f;
-             s.flesh  = 0.3f + 0.3f * t;
-             s.malice = 0.2f;
-             s.legion = 0.15f + 0.85f * t;
-         }},
-    };
-    for (const Example& e : examples) {
+    for (const Patch& e : patches()) {
         std::printf("  %s\n", e.name);
         render<4>(dir + "/" + e.file, 10.f, [&](float t, Params& p) {
             PanelState s;

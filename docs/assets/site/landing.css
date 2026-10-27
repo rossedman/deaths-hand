@@ -431,6 +431,12 @@
 .lp-sigils b { color: var(--cream); font-weight: 600; white-space: nowrap; }
 .lp-sigils span { color: var(--dim); }
 
+/* Hear it: two featured renders. */
+.lp-listen { margin-top: 2.4rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.lp-clip h3 { margin-top: 0; }
+.lp-clip__spec { display: block; width: 100%; height: 4.2rem; margin: 0.8rem 0 0.7rem; border-radius: 0.4rem; border: 1px solid var(--ink-3); object-fit: fill; }
+.lp-clip audio { display: block; width: 100%; height: 2.2rem; color-scheme: dark; }
+
 @keyframes lp-turn { to { transform: rotate(360deg); } }
 
 @keyframes lp-float { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-6px) rotate(3deg); } }
@@ -464,6 +470,7 @@
   .lp-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lp-section { padding: 3.5rem 0; }
   .lp-sigils { grid-template-columns: minmax(0, 1fr); }
+  .lp-listen { grid-template-columns: minmax(0, 1fr); }
   .lp-runes { display: none; }
   .lp-sigil { width: 28rem; height: 28rem; left: -8rem; top: -6rem; }
 }

@@ -88,6 +88,7 @@ validation:
 
 nav:
   - Home: index.md
+  - Listen: listen.md
   - Summon:
       - Getting started: getting-started.md
       - Reading the panel: panel.md

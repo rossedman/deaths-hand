@@ -11,6 +11,8 @@
 
 # Death's Hand
 
+**[Listen to it →](https://rossedman.io/deaths-hand/listen/)** Fourteen renders from the same DSP the module runs.
+
 An evil West-Coast style complex oscillator for the Electrosmith patch.Init and VCV Rack — two oscillators where the modulator
 shapes the primary through **through-zero FM**, a **wavefolder** (timbre +
 symmetry), and **AM / ring mod** — plus three ways to make it misbehave:

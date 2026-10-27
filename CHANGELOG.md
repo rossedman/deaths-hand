@@ -2,9 +2,9 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 0.1.0 (unreleased)
 
-The first public release. VCV Rack requires plugin versions to start with the Rack major version, so releases are tagged `v2.x.y` to match `vcv/plugin.json`.
+The first public release. The project version lives in `VERSION` and releases are tagged to match (`v0.1.0`). The VCV plugin keeps its own version in `vcv/plugin.json` (`2.0.0`), because VCV Rack 2 refuses to load a plugin whose version doesn't start with `2.`; its package files are named for that version.
 
 ### Added
 
@@ -15,4 +15,5 @@ The first public release. VCV Rack requires plugin versions to start with the Ra
 - A unison stack: up to four detuned primary voices and a sub one octave down, summed into the wavefolder, with spread, Lorenz drift and an envelope-aware DC correction. LEGION plays it.
 - A sixth patch, Legion. All six are written as knob positions and rendered through the firmware's own panel mapping.
 - Open-source project files, CI for every target, branding and a docs site.
+- A listening page in the docs: the six patches, a sweep of each macro and five longer pieces, rendered from the DSP at every docs build, with spectrograms and WAV downloads.
 - Signed releases: the firmware `.bin` and the VCV plugin for Linux x64, Windows x64, macOS x64 and macOS arm64, with cosign signatures and build provenance.
